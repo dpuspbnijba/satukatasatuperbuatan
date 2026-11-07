@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="kasburuh-app" content="web">
+  <meta name="description" content="KASBURUH — aplikasi keuangan, inventaris & anggota serikat pekerja.">
+  <title>KASBURUH</title>
+  <!-- Terapkan tema & warna tersimpan SEBELUM render (tanpa kedip) -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('kb_theme');
+        if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        var c = JSON.parse(localStorage.getItem('kb_brand') || 'null');
+        if (c && c.p) document.documentElement.style.setProperty('--primary', c.p);
+        if (c && c.a) document.documentElement.style.setProperty('--accent', c.a);
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Penangkap error: bila aplikasi gagal start, pesan error ditampilkan di layar (bukan logo berputar selamanya) -->
+  <script>
+    window.__ERR__ = [];
+    window.addEventListener('error', function (e) {
+      if (e.lineno && !window.__ERRLINE__) window.__ERRLINE__ = e.lineno;
+      window.__ERR__.push((e.message || 'Error') + (e.lineno ? ' (baris ' + e.lineno + ':' + e.colno + ')' : '') + (e.filename ? ' ' + e.filename.split('/').pop().slice(0, 40) : ''));
+    });
+    window.addEventListener('unhandledrejection', function (e) { window.__ERR__.push('Promise: ' + (e.reason && e.reason.message || e.reason)); });
+    /** Cari skrip yang tidak valid & tampilkan isi baris rusaknya (untuk diagnosis). */
+    window.__findBadLine = function () {
+      var NL = String.fromCharCode(10), out = '';
+      var list = document.getElementsByTagName('script');
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].src) continue;
+        var code = list[i].textContent;
+        try { new Function(code); } catch (err) {
+          var lines = code.split(NL), ln = err.lineNumber ? err.lineNumber - 2 : 0;
+          if (!ln && window.__ERRLINE__) {
+            // Cadangan: hitung posisi skrip di dokumen lalu petakan nomor baris dokumen → baris skrip
+            var doc = document.documentElement.outerHTML, at = doc.indexOf(code.slice(0, 200));
+            if (at > 0) ln = window.__ERRLINE__ - doc.slice(0, at).split(NL).length + 1;
+          }
+          out += NL + 'Skrip #' + i + ' (' + lines.length + ' baris), baris ' + ln + ':' + NL;
+          for (var k = Math.max(1, ln - 1); k <= Math.min(lines.length, ln + 1); k++) out += k + ': ' + lines[k - 1].slice(0, 220) + NL;
+          out += 'Baris terakhir skrip: ' + lines[lines.length - 1].slice(0, 80) + ' | ' + (lines[lines.length - 2] || '').slice(0, 80) + NL;
+        }
+      }
+      return out;
+    };
+    window.__showBootError = function () {
+      if (window.__BOOTED__) return;
+      var s = document.getElementById('splash'); if (!s) return;
+      var bad = ''; try { bad = window.__findBadLine(); } catch (e) { }
+      var msg = ((window.__ERR__.join(String.fromCharCode(10)) + bad) || 'Tidak ada pesan error. Kemungkinan file js/app.js gagal dimuat (cek folder js/ ikut ter-upload ke GitHub) atau isinya tidak lengkap (baris terakhir harus "boot();").')
+        .replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+      s.innerHTML = '<div style="max-width:560px;padding:24px;font:14px/1.5 system-ui,sans-serif;color:#0b1c30;text-align:left">' +
+        '<b style="font-size:16px">Aplikasi gagal dimuat</b><p style="margin:8px 0">Salin pesan di bawah ini dan kirimkan ke pengembang:</p>' +
+        '<pre style="white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-size:12px">' + msg +
+        String.fromCharCode(10, 10) + 'Browser: ' + navigator.userAgent.replace(/[<>&]/g, '') + '</pre>' +
+        '<button onclick="location.reload()" style="margin-top:8px;height:38px;padding:0 16px;border-radius:10px;border:0;background:#6247EA;color:#fff;font-weight:600;cursor:pointer">Muat ulang</button></div>';
+    };
+    setTimeout(window.__showBootError, 8000);
+  </script>
+  <!-- CDN tidak memblokir tampilan: app langsung tampil, ikon/font menyusul -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="css/style.css?v=2.0.0">
+</head>
+<body>
+  <a class="skip-link" href="javascript:void(0)" onclick="document.getElementById('main').focus()">Lewati ke konten</a>
+
+  <!-- ═══ Splash (hanya tampil sepersekian detik) ═══ -->
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="splash-mark"><i class="bi bi-bank2"></i></div>
+    <div class="splash-bar"><span></span></div>
+  </div>
+
+  <!-- ═══ VIEW: LANDING PAGE (publik, tanpa data keuangan) ═══ -->
+  <div id="view-landing" class="view landing" hidden>
+    <div id="lp-prevbar" class="lp-prevbar" hidden><span><i class="bi bi-eye"></i> Mode Pratinjau · perubahan belum disimpan</span><button onclick="lpcBack()"><i class="bi bi-arrow-left"></i> Kembali ke Pengaturan</button></div>
+    <div id="lp-root"></div>
+    <span id="portal-year" hidden></span>
+  </div>
+
+  <!-- ═══ VIEW: LOGIN ═══ -->
+  <div id="view-login" class="view login-view lg" hidden>
+    <!-- Latar: wallpaper (gambar & opacity diatur Super Admin) di atas pita cahaya abstrak -->
+    <div class="lg-ribbons" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div id="login-bg" class="login-bg" aria-hidden="true"></div>
+    <button class="lg-back" onclick="showLanding()"><i class="bi bi-arrow-left"></i> Beranda</button>
+
+    <div class="lg-card">
+      <div class="lg-brand">
+        <span class="lg-logo" id="lg-logo"><i class="bi bi-bank2"></i></span>
+        <div class="lg-name" data-app-name>KASBURUH</div>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+        <h1 class="lg-title" id="lg-title">Selamat Datang Kembali</h1>
+        <p class="lg-sub" id="lg-sub">Masuk untuk mengelola kas serikat</p>
+        <label class="lg-field">
+          <span>NPP</span>
+          <div class="lg-input"><i class="bi bi-person"></i>
+            <input id="login-user" autocomplete="username" autocapitalize="off" placeholder="NPP contoh 45269" required>
+          </div>
+        </label>
+        <label class="lg-field">
+          <span>Kata sandi</span>
+          <div class="lg-input"><i class="bi bi-lock"></i>
+            <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <button type="button" class="lg-eye" onclick="togglePass('login-pass', this)" aria-label="Tampilkan kata sandi"><i class="bi bi-eye"></i></button>
+          </div>
+        </label>
+        <button type="button" class="lg-link" onclick="forgotPassword()">Lupa kata sandi?</button>
+        <p id="login-error" class="lg-error" role="alert" hidden></p>
+        <button id="login-btn" class="lg-btn" type="submit"><span>Masuk</span></button>
+        <p class="lg-hint"><i class="bi bi-info-circle"></i> Login pertama? Kata sandi awal = username/NPP, lalu Anda diminta membuat sandi baru.</p>
+        <p class="lg-foot" id="lg-foot">Belum punya akun? <b>Hubungi Super Admin</b></p>
+      </form>
+
+      <!-- Wajib ganti kata sandi (login pertama / setelah reset) -->
+      <form id="pwchange-form" onsubmit="handleForcedChange(event)" novalidate hidden>
+        <h1 class="lg-title">Buat Kata Sandi Baru</h1>
+        <p class="lg-sub">Halo <b id="pwc-name">-</b>, demi keamanan ganti kata sandi awal Anda sebelum melanjutkan.</p>
+        <label class="lg-field">
+          <span>Kata sandi baru</span>
+          <div class="lg-input"><i class="bi bi-lock"></i>
+            <input id="pwc-new" type="password" autocomplete="new-password" oninput="pwRules()" required>
+            <button type="button" class="lg-eye" onclick="togglePass('pwc-new', this)" aria-label="Tampilkan kata sandi"><i class="bi bi-eye"></i></button>
+          </div>
+        </label>
+        <label class="lg-field">
+          <span>Ulangi kata sandi baru</span>
+          <div class="lg-input"><i class="bi bi-lock"></i>
+            <input id="pwc-new2" type="password" autocomplete="new-password" oninput="pwRules()" required>
+          </div>
+        </label>
+        <ul class="pw-rules lg-rules" id="pw-rules">
+          <li data-r="len"><i class="bi bi-circle"></i>Minimal 8 karakter</li>
+          <li data-r="user"><i class="bi bi-circle"></i>Tidak sama dengan username/NPP</li>
+          <li data-r="mix"><i class="bi bi-circle"></i>Mengandung huruf dan angka</li>
+          <li data-r="same"><i class="bi bi-circle"></i>Kedua isian sama</li>
+        </ul>
+        <p id="pwc-error" class="lg-error" role="alert" hidden></p>
+        <button id="pwc-btn" class="lg-btn" type="submit"><span>Simpan &amp; Lanjutkan</span></button>
+        <button type="button" class="lg-link lg-center" onclick="cancelForcedChange()">Batal &amp; keluar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ VIEW: APLIKASI PENGURUS ═══ -->
+  <div id="view-app" class="view app" hidden>
+    <aside id="sidebar" class="sidebar" aria-label="Navigasi utama">
+      <div class="sb-brand">
+        <span class="logo-slot" data-logo></span>
+        <div class="sb-brand-text"><strong data-app-name>KASBURUH</strong><small data-app-sub>DPU SP</small></div>
+        <button class="btn-icon sb-close" onclick="closeDrawer()" aria-label="Tutup menu"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <nav id="sb-nav" class="sb-nav"></nav>
+      <div class="sb-foot">
+        <div class="sb-clock" id="sb-clock"></div>
+        <div class="theme-switch" role="group" aria-label="Mode tampilan">
+          <button data-theme-set="light" onclick="setTheme('light')" aria-label="Mode terang"><i class="bi bi-sun"></i></button>
+          <button data-theme-set="dark" onclick="setTheme('dark')" aria-label="Mode gelap"><i class="bi bi-moon"></i></button>
+        </div>
+        <div class="sb-user">
+          <span class="avatar" id="sb-avatar">?</span>
+          <div><strong id="sb-user-name">-</strong><small id="sb-user-role">-</small></div>
+        </div>
+        <button class="sb-link" onclick="handleLogout()"><i class="bi bi-box-arrow-left"></i><span>Keluar</span></button>
+      </div>
+    </aside>
+    <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon only-mobile" onclick="openDrawer()" aria-label="Buka menu"><i class="bi bi-list"></i></button>
+        <div class="topbar-title">
+          <div class="greet">
+            <strong id="greeting">Selamat datang</strong>
+            <span class="greet-role" id="greet-role"></span>
+          </div>
+          <span class="mono muted" id="topbar-period" hidden></span>
+        </div>
+        <div class="topbar-actions">
+          <!-- Waktu server (WIB), disinkronkan dengan jam server Apps Script -->
+          <div class="srv-clock" id="srv-clock" title="Waktu server">
+            <i class="bi bi-clock-history"></i>
+            <span class="srv-date" id="srv-date">-</span>
+            <b class="mono" id="srv-time">--:--:--</b>
+            <small id="srv-tz">WIB</small>
+          </div>
+          <span id="sync-dot" class="sync-dot" title="Tersinkron"></span>
+          <div class="popover-host">
+            <button class="btn btn-ghost btn-icon bell" onclick="toggleMenuPop('notif-pop')" aria-label="Notifikasi tagihan">
+              <i class="bi bi-bell"></i><span id="bell-count" class="bell-count" hidden>0</span>
+            </button>
+            <div id="notif-pop" class="popover popover-right notif-pop" hidden></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <section id="sec-ringkasan" class="section" data-title="Ringkasan"></section>
+        <section id="sec-transaksi" class="section" data-title="Transaksi"></section>
+        <section id="sec-dompet" class="section" data-title="Dompet"></section>
+        <section id="sec-kategori" class="section" data-title="Kategori"></section>
+        <section id="sec-anggaran" class="section" data-title="Anggaran"></section>
+        <section id="sec-tabungan" class="section" data-title="Tabungan"></section>
+        <section id="sec-tagihan" class="section" data-title="Tagihan"></section>
+        <section id="sec-inventaris" class="section" data-title="Inventaris"></section>
+        <section id="sec-peminjaman" class="section" data-title="Peminjaman Barang"></section>
+        <section id="sec-anggota" class="section" data-title="Anggota"></section>
+        <section id="sec-laporan" class="section" data-title="Laporan"></section>
+        <section id="sec-gathering" class="section" data-title="Gathering"></section>
+        <section id="sec-undian" class="section" data-title="Spin Wheel Doorprize"></section>
+        <section id="sec-pengaturan" class="section" data-title="Pengaturan"></section>
+      </main>
+    </div>
+
+    <!-- Tombol aksi cepat (mobile) -->
+    <button id="fab" class="fab only-mobile" onclick="openTransaksiForm()" aria-label="Catat transaksi"><i class="bi bi-plus-lg"></i></button>
+  </div>
+
+  <!-- ═══ Modal & Toast ═══ -->
+  <div id="modal-root" class="modal-root" hidden>
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h3 id="modal-title">-</h3>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+      <div id="modal-foot" class="modal-foot"></div>
+    </div>
+  </div>
+  <div id="drp-pop" class="drp-pop" role="dialog" aria-label="Pilih rentang tanggal" hidden></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <a id="dl-anchor" hidden></a>
+
+  <!-- Urutan wajib: config.js (URL server) → api.js (fetch ke Apps Script) → app.js (aplikasi) -->
+  <script src="js/config.js?v=2.0.0"></script>
+  <script src="js/api.js?v=2.0.0"></script>
+  <script src="js/app.js?v=2.0.0"></script>
+</body>
+</html>
