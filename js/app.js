@@ -197,7 +197,7 @@ function tickClock() {
 const greetingWord = () => { const h = srvParts().hour; return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 19 ? 'Selamat Sore' : 'Selamat Malam'; };
 
 // ════════════════ API (fetch ke Apps Script → Promise) ════════════════
-const CLIENT_VERSION = '2.1.0';   // harus sama dengan APP_VERSION di Kode.gs
+const CLIENT_VERSION = '2.2.0';   // harus sama dengan APP_VERSION di Kode.gs
 /** Nama bawaan aplikasi bila Pengaturan belum diisi. */
 const APP_NAME_DEFAULT = 'DPU SP JBA';
 const PERF = { calls: [] };
@@ -725,11 +725,36 @@ function togglePass(id, btn) {
 }
 
 // ════════════════ BRAND & TEMA ════════════════
+/** v2.2 — Tema tampilan aplikasi (dipilih Super Admin, berlaku untuk semua pengguna).
+ *  p/a = warna utama & aksen bawaan tema; sb/cv = pratinjau menu samping & latar; pDark = warna utama pengganti di mode gelap. */
+const TEMA_APP = [
+  { id: 'klasik', nama: 'Ungu Klasik', ket: 'Tampilan bawaan, ungu & amber', p: '#6247EA', a: '#F59E0B', sb: '#141B2B', cv: '#F6F7FB' },
+  { id: 'samudra', nama: 'Biru Samudra', ket: 'Segar, profesional, tenang', p: '#2563EB', a: '#06B6D4', sb: 'linear-gradient(180deg,#0F3A7A,#071A3A)', cv: '#F1F6FF' },
+  { id: 'zamrud', nama: 'Hijau Zamrud', ket: 'Alami & menyejukkan', p: '#059669', a: '#F59E0B', sb: 'linear-gradient(180deg,#066A50,#022C22)', cv: '#F0F8F4' },
+  { id: 'merah', nama: 'Merah Juang', ket: 'Semangat perjuangan serikat', p: '#C8102E', a: '#F5B301', sb: 'linear-gradient(180deg,#6B1020,#22050B)', cv: '#FBF5F4' },
+  { id: 'senja', nama: 'Senja Jingga', ket: 'Hangat & ceria', p: '#EA580C', a: '#DB2777', sb: 'linear-gradient(180deg,#A43A12,#6B1F3A,#2E0B26)', cv: '#FFF7F1' },
+  { id: 'emas', nama: 'Hitam Emas', ket: 'Mewah & elegan, judul klasik', p: '#A67C00', a: '#D4AF37', sb: 'linear-gradient(180deg,#1F1B14,#0A0907)', cv: '#FAF8F2' },
+  { id: 'lavender', nama: 'Pastel Lavender', ket: 'Lembut, menu samping terang', p: '#7C3AED', a: '#EC4899', sb: '#FFFFFF', cv: '#F6F3FF', sbInk: '#4B4669' },
+  { id: 'teal', nama: 'Teal Modern', ket: 'Bersih, modern, kontras', p: '#0D9488', a: '#F97316', sb: 'linear-gradient(180deg,#145752,#062523)', cv: '#EFF8F7' },
+  { id: 'neon', nama: 'Malam Neon', ket: 'Futuristik, cocok mode gelap', p: '#7C3AED', a: '#22D3EE', sb: 'radial-gradient(circle at 0 0,rgba(34,211,238,.35),transparent 60%),radial-gradient(circle at 100% 100%,rgba(217,70,239,.4),transparent 60%),#0A0620', cv: '#F4F2FF' },
+  { id: 'monokrom', nama: 'Monokrom', ket: 'Minimalis hitam-putih', p: '#18181B', a: '#FACC15', sb: '#0A0A0A', cv: '#F4F4F5', pDark: '#71717A' },
+  { id: 'batik', nama: 'Batik Nusantara', ket: 'Cokelat sogan & motif kawung', p: '#8B4A1C', a: '#D4A017', sb: 'linear-gradient(180deg,#432711,#1F1209)', cv: '#FBF6EE' },
+  { id: 'aurora', nama: 'Aurora', ket: 'Gradasi warna-warni', p: '#4F46E5', a: '#14B8A6', sb: 'linear-gradient(180deg,#3730A3,#1E1B4B,#0F172A)', cv: 'linear-gradient(135deg,#E8EAFF,#E3FBF7,#FDE9F3)' }
+];
+const temaApp = (id) => TEMA_APP.find((t) => t.id === id) || TEMA_APP[0];
+/** Pasang tema di <html data-skin>, lalu sesuaikan warna utama untuk mode gelap bila tema memerlukannya. */
+function applySkin(id, warna) {
+  const root = document.documentElement, t = temaApp(id);
+  if (t.id === 'klasik') root.removeAttribute('data-skin'); else root.setAttribute('data-skin', t.id);
+  const p = warna || (S.settings && S.settings.warna_utama) || '';
+  if (/^#[0-9a-f]{6}$/i.test(p)) root.style.setProperty('--primary', t.pDark && root.getAttribute('data-theme') === 'dark' && p.toLowerCase() === t.p.toLowerCase() ? t.pDark : p);
+}
 function applyBrand(st) {
   st = st || {};
   const root = document.documentElement;
   if (/^#[0-9a-f]{6}$/i.test(st.warna_utama || '')) root.style.setProperty('--primary', st.warna_utama);
   if (/^#[0-9a-f]{6}$/i.test(st.warna_aksen || '')) root.style.setProperty('--accent', st.warna_aksen);
+  if (st.tema_tampilan !== undefined || st.warna_utama) applySkin(st.tema_tampilan, st.warna_utama);
   const name = st.nama_aplikasi || APP_NAME_DEFAULT, sub = st.subjudul || '';
   $$('[data-app-name]').forEach((el) => { el.textContent = name; });
   $$('[data-app-sub]').forEach((el) => { el.textContent = sub; });
@@ -741,9 +766,9 @@ function applyBrand(st) {
   applyLoginBrand(st);
   applyLanding(st);
   if (st.warna_utama) {
-    lsSet('kb_brand', { p: st.warna_utama, a: st.warna_aksen });
+    lsSet('kb_brand', { p: st.warna_utama, a: st.warna_aksen, s: st.tema_tampilan || 'klasik' });
     const keep = {};
-    ['nama_aplikasi', 'subjudul', 'logo_data', 'link_logo', 'logo_skala', 'warna_utama', 'warna_aksen', 'login_bg', 'login_bg_opacity', 'login_logo', 'login_judul', 'login_sub', 'login_catatan', 'lp_bg', 'lp_bg_opacity', 'lp_eyebrow',
+    ['nama_aplikasi', 'subjudul', 'logo_data', 'link_logo', 'logo_skala', 'warna_utama', 'warna_aksen', 'tema_tampilan', 'login_bg', 'login_bg_opacity', 'login_logo', 'login_judul', 'login_sub', 'login_catatan', 'lp_bg', 'lp_bg_opacity', 'lp_eyebrow',
       'lp_judul1', 'lp_judul2', 'lp_deskripsi', 'lp_tombol', 'lp_stat1', 'lp_stat2', 'lp_stat3', 'lp_config'].forEach((k) => { if (st[k] !== undefined) keep[k] = st[k]; });
     keep.nama_aplikasi = name; keep.subjudul = sub;
     lsSet('kb_brand_full', keep);
@@ -778,6 +803,8 @@ function forgotPassword() {
 function setTheme(t, silent) {
   document.documentElement.setAttribute('data-theme', t);
   if (!silent) lsSet('kb_theme', t);
+  const sk = document.documentElement.getAttribute('data-skin');
+  if (sk) applySkin(sk, typeof pendingTema === 'string' && $('#set-p') ? $('#set-p').value : null);
   updateThemeSwitch();
   if (S.user) { markDirty(['ringkasan', 'dompet', 'anggaran', 'laporan']); }
   if (!$('#view-landing').hidden && !S.lpPreviewing) applyLanding(S.settings && S.settings.lp_judul1 !== undefined ? S.settings : lsGet('kb_brand_full', {}));
@@ -4088,7 +4115,8 @@ function renderUndian() {
   u.n = Math.max(1, Math.min(num(u.n) || 1, maxN));
   const totalPrize = ps.reduce((a, x) => a + num(x.jumlah), 0);
   const dis = !canW() || !h || !pool.length || UND.spinning;
-  const won = new Set(S.db.UndianPemenang.map((w) => w.id_peserta)), q = (u.q || '').toLowerCase();
+  const tampil = (w) => !(UNDSEQ.run && UNDSEQ.hide && UNDSEQ.hide.has(w.id_peserta));   // nama belum diumumkan → belum tampil di daftar
+  const won = new Set(S.db.UndianPemenang.filter(tampil).map((w) => w.id_peserta)), q = (u.q || '').toLowerCase();
   const plist = P.filter((p) => !q || (p.nama + ' ' + (p.unit || '')).toLowerCase().indexOf(q) >= 0).sort((a, b) => String(a.nama).localeCompare(b.nama));
   const logo = S.settings.logo_data || S.settings.link_logo;
   $('#sec-undian').innerHTML = `
@@ -4132,10 +4160,10 @@ function renderUndian() {
     <div class="stack">
       <div class="card"><div class="card-head card-pad" style="margin:0;padding-bottom:10px"><h3><i class="bi bi-trophy t-warn"></i> Pemenang</h3>
         <div class="row">${canW() && W0.length ? '<button class="btn btn-ghost btn-sm" onclick="undReset(\'pemenang\')" title="Hapus semua pemenang, undi ulang"><i class="bi bi-arrow-counterclockwise"></i>Ulang</button>' : ''}<span class="chip chip-in">${W0.length}</span></div></div>
-        <div class="und-list">${W0.length ? W0.slice(0, 150).map((w) => { const p = S.db.UndianPeserta.find((x) => x.id === w.id_peserta) || {}; return `<div class="und-item" style="${w._pending ? 'opacity:.6' : ''}">
+        <div class="und-list">${W0.filter(tampil).length ? W0.filter(tampil).slice(0, 150).map((w) => { const p = S.db.UndianPeserta.find((x) => x.id === w.id_peserta) || {}; return `<div class="und-item" style="${w._pending ? 'opacity:.6' : ''}">
           <span class="und-put" title="Putaran ${num(w.putaran)}">#${num(w.putaran)}</span><div style="flex:1;min-width:0"><b class="ellipsis">${esc(w.nama_peserta)}</b><div class="small muted ellipsis">${p.unit ? esc(p.unit) + ' · ' : ''}<span class="t-primary">${esc(w.nama_hadiah)}</span></div></div>
           ${canW() && !w._pending ? `<button class="btn-icon sm" onclick="deleteEntity('UndianPemenang','${w.id}')" aria-label="Batalkan pemenang" title="Batalkan pemenang (peserta kembali ke roda)"><i class="bi bi-x-lg"></i></button>` : ''}</div>`; }).join('')
-          : '<div class="empty" style="padding:24px"><i class="bi bi-trophy"></i>Belum ada pemenang. Putar roda untuk mulai.</div>'}</div></div>
+          : `<div class="empty" style="padding:24px"><i class="bi bi-trophy"></i>${UNDSEQ.run ? 'Pemenang sedang diumumkan…' : 'Belum ada pemenang. Putar roda untuk mulai.'}</div>`}</div></div>
       <div class="card"><div class="card-head card-pad" style="margin:0;padding-bottom:10px"><h3><i class="bi bi-gift t-primary"></i> Hadiah</h3>${canW() ? '<button class="btn btn-soft btn-sm" onclick="openUndHadiah()"><i class="bi bi-plus-lg"></i>Hadiah</button>' : ''}</div>
         <div class="und-list">${ps.length ? ps.map((x) => { const used = undUsed(x.id), p = num(x.jumlah) ? (used / num(x.jumlah)) * 100 : 0; return `<div class="und-item${x.id === S.ui.und.hadiah ? ' on' : ''}">
           <div style="flex:1;min-width:0"><div class="row-between"><b class="ellipsis">${esc(x.nama_hadiah)}</b><span class="mono small ${used >= num(x.jumlah) ? 't-in' : ''}">${used}/${num(x.jumlah)}</span></div><div class="gat-prog" style="margin:6px 0 0"><span style="width:${Math.min(100, p)}%"></span></div></div>
@@ -4246,8 +4274,8 @@ function undSpin() {
     if (ii !== UND.lastIdx) { UND.lastIdx = ii; if (tk && pool[ii]) tk.textContent = pool[ii].nama; if (t < 0.97) undTick(); }
     if (t < 1) { UND.raf = requestAnimationFrame(step); return; }
     UND.spinning = false; UND.rot = ((UND.rot % TAU) + TAU) % TAU;
-    if (tk) { tk.classList.remove('live'); tk.textContent = winners[0].nama; }
-    UNDS.finish();
+    if (tk) { tk.classList.remove('live'); tk.textContent = 'Mengumumkan pemenang…'; }
+    UNDS.landed();
     undReveal(h, winners);
   };
   UND.raf = requestAnimationFrame(step);
@@ -4257,14 +4285,18 @@ function undReveal(h, winners) {
   const d = srvNow(), stamp = toYmd(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
   const recs = winners.map((p) => ({ id: tmpId(), id_peserta: p.id, nama_peserta: p.nama, id_hadiah: h.id, nama_hadiah: h.nama_hadiah, waktu: stamp, putaran: put, dicatat_oleh: S.user.nama, _pending: true }));
   recs.forEach((r) => S.db.UndianPemenang.push(r));
-  const leftAfter = undLeft(h);
+  const leftAfter = undLeft(h), n = winners.length;
   const conf = Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 2.9 + 1) % 100}%;background:${UND_COLORS[i % UND_COLORS.length]};animation-delay:${(i % 12) * 0.12}s;animation-duration:${2.4 + (i % 5) * 0.35}s"></i>`).join('');
-  openModal({ title: 'Selamat kepada pemenang!', size: winners.length > 6 ? 'wide' : '', body: `<div class="win-wrap"><div class="confetti" aria-hidden="true">${conf}</div>
+  const lagi = (leftAfter > 0 || undPrizes().some((x) => undLeft(x) > 0)) && undPool().length;
+  openModal({ title: n > 1 ? 'Pengumuman ' + n + ' Pemenang' : 'Pengumuman Pemenang', size: n > 6 ? 'wide' : '', body: `<div class="win-wrap seq" id="und-seq"><div class="confetti" aria-hidden="true">${conf}</div>
       <span class="caps muted">${esc(S.ui.und.title || 'Undian Doorprize')} · Putaran #${put}</span>
       <div class="win-prize"><i class="bi bi-gift-fill"></i>${esc(h.nama_hadiah)}</div>
-      <div class="win-names ${winners.length > 1 ? 'multi' : ''}">${winners.map((p, i) => `<div class="win-card" style="animation-delay:${Math.min(i, 20) * 0.08}s">${winners.length > 1 ? `<span class="n">${i + 1}</span>` : ''}<b>${esc(p.nama)}</b>${p.unit ? `<small>${esc(p.unit)}</small>` : ''}</div>`).join('')}</div>
-      <p class="small muted">Sisa ${esc(h.nama_hadiah)}: ${leftAfter} · hasil tersimpan otomatis.</p></div>`,
-    foot: `<button class="btn btn-secondary" onclick="closeModal()">Tutup</button>${(leftAfter > 0 || undPrizes().some((x) => undLeft(x) > 0)) && undPool().length ? '<button class="btn btn-primary" onclick="closeModal();setTimeout(undSpin,250)"><i class="bi bi-arrow-repeat"></i>Putar Lagi</button>' : ''}` });
+      <div class="win-status" id="und-seq-st" aria-live="polite"><span class="pd"></span>${n > 1 ? `Mengumumkan pemenang <b>1</b> dari <b>${n}</b>…` : 'Dan pemenangnya adalah…'}</div>
+      <div class="win-names ${n > 1 ? 'multi' : ''}">${winners.map((p, i) => `<div class="win-card wait" data-i="${i}">${n > 1 ? `<span class="n">${i + 1}</span>` : ''}<b>${esc(p.nama)}</b>${p.unit ? `<small>${esc(p.unit)}</small>` : ''}<span class="scr" aria-hidden="true">?</span></div>`).join('')}</div>
+      <p class="small muted" style="position:relative;z-index:1">Sisa ${esc(h.nama_hadiah)}: ${leftAfter} · hasil tersimpan otomatis.</p></div>`,
+    foot: `<button class="btn btn-ghost" id="und-skip" onclick="undSeqSkip()"><i class="bi bi-skip-forward-fill"></i>Tampilkan Semua</button>
+      <button class="btn btn-secondary" id="und-close" onclick="closeModal()" disabled>Tutup</button>${lagi ? '<button class="btn btn-primary" id="und-again" onclick="closeModal();setTimeout(undSpin,250)" disabled><i class="bi bi-arrow-repeat"></i>Putar Lagi</button>' : ''}` });
+  undSeqStart(winners);
   afterLocalChange('UndianPemenang');
   enqueue(() => api('simpanPemenang', S.token, recs.map((r) => ({ id_peserta: resolveIds({ id: r.id_peserta }).id, id_hadiah: resolveIds({ id: r.id_hadiah }).id, putaran: put }))).then((res) => {
     const ids = recs.map((r) => r.id);
@@ -4275,6 +4307,68 @@ function undReveal(h, winners) {
     S.db.UndianPemenang = S.db.UndianPemenang.filter((w) => ids.indexOf(w.id) < 0); afterLocalChange('UndianPemenang');
     toast(e.message, 'error', 'Pemenang gagal disimpan');
   }));
+}
+/** Jadwal pengumuman (detik): jeda antar nama makin rapat bila pemenang banyak. Musik & tampilan memakai jadwal yang sama. */
+function undSeqPlan(n) {
+  const lead = n > 1 ? 1.7 : 2.3;
+  const gap = n <= 1 ? 0 : n <= 3 ? 2.0 : n <= 6 ? 1.6 : n <= 12 ? 1.2 : n <= 25 ? 0.9 : 0.6;
+  const hits = Array.from({ length: n }, (_, i) => lead + i * gap);
+  return { n, lead, gap, hits, roll: (i) => (i === 0 ? lead - 0.25 : Math.min(gap * 0.82, 1.5)) };
+}
+const UNDSEQ = { raf: 0, run: false };
+function undSeqStart(winners) {
+  undSeqStop();
+  const plan = undSeqPlan(winners.length);
+  const names = S.db.UndianPeserta.map((p) => p.nama).filter(Boolean);
+  const lat = UNDS.pengumuman(plan);   // detik tunda audio (0 bila suara mati)
+  Object.assign(UNDSEQ, { run: true, plan, names, i: 0, t0: performance.now() + (lat || 0) * 1000, last: 0, n: winners.length, winners, hide: new Set(winners.map((p) => p.id)) });
+  UNDSEQ.raf = requestAnimationFrame(undSeqLoop);
+}
+function undSeqStop() {
+  if (UNDSEQ.raf) cancelAnimationFrame(UNDSEQ.raf);
+  const was = UNDSEQ.run; UNDSEQ.raf = 0; UNDSEQ.run = false; UNDSEQ.hide = null;
+  if (was && S.current === 'undian' && !UND.spinning) renderUndian();   // tampilkan pemenang di daftar setelah diumumkan
+}
+function undSeqReveal(i) {
+  const card = $(`#und-seq .win-card[data-i="${i}"]`); if (!card) return;
+  card.classList.remove('wait', 'roll'); card.classList.add('show');
+  const st = $('#und-seq-st');
+  if (st) st.innerHTML = UNDSEQ.n > 1 ? (i + 1 < UNDSEQ.n ? `<span class="pd"></span>Mengumumkan pemenang <b>${i + 2}</b> dari <b>${UNDSEQ.n}</b>…` : '') : '';
+  if (UNDSEQ.n > 1 && card.scrollIntoView) { try { card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { } }
+}
+function undSeqDone() {
+  undSeqStop();
+  const box = $('#und-seq'); if (!box) return;
+  box.classList.add('done');
+  const st = $('#und-seq-st'); if (st) st.innerHTML = '<i class="bi bi-stars t-warn"></i> <span>Selamat kepada ' + (UNDSEQ.n > 1 ? UNDSEQ.n + ' pemenang!' : 'pemenang!') + '</span>';
+  const sk = $('#und-skip'); if (sk) sk.hidden = true;
+  ['#und-close', '#und-again'].forEach((q) => { const b = $(q); if (b) b.disabled = false; });
+  const tk = $('#und-ticker'); if (tk && UNDSEQ.winners) tk.textContent = UNDSEQ.n > 1 ? UNDSEQ.n + ' pemenang telah diumumkan' : UNDSEQ.winners[0].nama;
+  const g = $('#und-again') || $('#und-close'); if (g) g.focus();
+}
+function undSeqLoop(now) {
+  if (!UNDSEQ.run) return;
+  if (!$('#und-seq')) { undSeqStop(); UNDS.stop(); return; }   // modal ditutup → hentikan musik
+  const U = UNDSEQ, el = (now - U.t0) / 1000;
+  while (U.i < U.n && el >= U.plan.hits[U.i]) { undSeqReveal(U.i); U.i++; }
+  if (U.i >= U.n) { undSeqDone(); return; }
+  if (el >= U.plan.hits[U.i] - U.plan.roll(U.i)) {
+    const card = $(`#und-seq .win-card[data-i="${U.i}"]`);
+    if (card) {
+      if (!card.classList.contains('roll')) card.classList.add('roll');
+      // nama berganti cepat mengikuti pukulan genderang, makin cepat menjelang nama keluar
+      const left = U.plan.hits[U.i] - el, every = left < 0.4 ? 45 : left < 0.9 ? 70 : 110;
+      if (now - U.last > every && U.names.length) { const sc = card.querySelector('.scr'); if (sc) sc.textContent = U.names[Math.floor(Math.random() * U.names.length)]; U.last = now; }
+    }
+  }
+  U.raf = requestAnimationFrame(undSeqLoop);
+}
+/** Lewati: tampilkan semua nama sekaligus + tanda selesai. */
+function undSeqSkip() {
+  if (!UNDSEQ.run) return;
+  UNDS.stop();
+  for (let i = UNDSEQ.i; i < UNDSEQ.n; i++) undSeqReveal(i);
+  UNDSEQ.i = UNDSEQ.n; UNDS.finish(); undSeqDone();
 }
 function undReset(scope) {
   const all = scope === 'semua';
@@ -5225,7 +5319,74 @@ const UNDS = {
     [523.25, 659.25, 783.99, 1046.5].forEach((f) => note(f, t + 0.4, 1.5, 0.07));
   },
   stop() { this.live.splice(0).forEach((n) => { try { n.stop(); } catch (e) { } }); },
-  preview() { if (!this.init()) return; const on = this.on(); if (!on) lsSet('kb_und_sound', true); this.start(2600); setTimeout(() => this.finish(), 2600); if (!on) setTimeout(() => lsSet('kb_und_sound', false), 2700); }
+  // ── v2.2: pengumuman pemenang satu per satu, seirama musik ──
+  /** Roda berhenti: hentakan pendek. */
+  landed() {
+    if (!this.on() || !this.init()) return;
+    const t = this.ctx.currentTime + 0.01; this.thump(t, 0.75); this.snare(t, 0.3);
+  },
+  hat(t, v) {
+    const c = this.ctx, s = c.createBufferSource(); s.buffer = this.noise;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7200;
+    const g = this.env(t, v, 0.001, 0.035); s.connect(hp); hp.connect(g); g.connect(this.master); s.start(t, Math.random() * 1.5, 0.06); this.track(s);
+  },
+  bass(t, f, dur, v) {
+    const c = this.ctx, lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 4;
+    const g = this.env(t, v, 0.008, Math.max(0.06, dur)); lp.connect(g); g.connect(this.master);
+    [['sawtooth', f], ['sine', f / 2]].forEach(([ty, fq]) => { const o = c.createOscillator(); o.type = ty; o.frequency.value = fq; o.connect(lp); o.start(t); o.stop(t + dur + 0.08); this.track(o); });
+  },
+  crash(t, len, v) {
+    const c = this.ctx, s = c.createBufferSource(); s.buffer = this.noise;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 4800;
+    const g = this.env(t, v, 0.003, len); s.connect(hp); hp.connect(g); g.connect(this.master); s.start(t, Math.random() * 0.2, len + 0.1); this.track(s);
+  },
+  /** Akor tiup (brass) pendek: dasar + kuint + oktaf. */
+  brass(f, at, dur, v) {
+    const c = this.ctx, lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, at); lp.frequency.exponentialRampToValueAtTime(3200, at + 0.06);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(v, at + 0.025); g.gain.setValueAtTime(v, at + dur * 0.55); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    lp.connect(g); g.connect(this.master);
+    [-7, 7].forEach((det) => { const o = c.createOscillator(); o.type = 'sawtooth'; o.detune.value = det; o.frequency.value = f; o.connect(lp); o.start(at); o.stop(at + dur + 0.05); this.track(o); });
+  },
+  /** Fanfare penutup karya sendiri: arpeggio naik lalu akor mayor panjang berkilau. */
+  fanfare(t) {
+    [[392, 0], [523.25, 0.12], [659.25, 0.24], [783.99, 0.36]].forEach(([f, d]) => this.brass(f, t + d, 0.2, 0.085));
+    [523.25, 659.25, 783.99, 1046.5].forEach((f) => this.brass(f, t + 0.5, 1.9, 0.065));
+    [2093, 2637, 3136, 4186].forEach((f, i) => { const o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = this.env(t + 0.6 + i * 0.09, 0.03, 0.005, 0.5); o.connect(g); g.connect(this.master); o.start(t + 0.6 + i * 0.09); o.stop(t + 1.3 + i * 0.09); this.track(o); });
+  },
+  /** Jadwalkan musik pengumuman sesuai rencana undSeqPlan(): denyut bass + hi-hat bertempo, dengung tegang yang naik,
+   *  genderang menggulung sebelum tiap nama, hentakan + akor saat nama keluar (nadanya naik satu per satu), fanfare di nama terakhir.
+   *  Mengembalikan tunda audio (detik) agar tampilan nama tepat seirama. */
+  pengumuman(plan) {
+    if (!this.on() || !this.init()) return 0;
+    const c = this.ctx, lat = 0.06, t0 = c.currentTime + lat, n = plan.n, end = plan.hits[n - 1];
+    const pulse = n > 1 ? (plan.gap >= 1.2 ? plan.gap / 8 : plan.gap / 4) : 0.25;
+    const riff = [55, 55, 65.41, 55, 82.41, 55, 73.42, 65.41];   // A–C–E–D minor: tegang
+    for (let tt = 0, k = 0; tt < end - 0.03; tt += pulse, k++) {
+      const pr = tt / Math.max(end, 0.1);
+      this.bass(t0 + tt, riff[k % riff.length], pulse * 0.85, 0.09 + 0.09 * pr);
+      this.hat(t0 + tt, (k % 2 ? 0.025 : 0.05) * (0.7 + pr));
+    }
+    // dengung tegang (sekonde kecil) yang makin terang sampai nama terakhir
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.setValueAtTime(260, t0); lp.frequency.exponentialRampToValueAtTime(2200, t0 + end);
+    const pg = c.createGain(); pg.gain.setValueAtTime(0.0001, t0); pg.gain.exponentialRampToValueAtTime(0.045, t0 + Math.min(1, end)); pg.gain.linearRampToValueAtTime(0.075, t0 + end - 0.05); pg.gain.exponentialRampToValueAtTime(0.0001, t0 + end + 0.2);
+    lp.connect(pg); pg.connect(this.master);
+    [[110, -6], [116.54, 6]].forEach(([f, det]) => { const o = c.createOscillator(); o.type = 'sawtooth'; o.detune.value = det; o.frequency.setValueAtTime(f, t0); o.frequency.exponentialRampToValueAtTime(f * 1.5, t0 + end); o.connect(lp); o.start(t0); o.stop(t0 + end + 0.25); this.track(o); });
+    if (n === 1) { let hb = 0.5, gap = 0.7; while (hb < end - 0.3) { this.thump(t0 + hb, 0.5); this.thump(t0 + hb + 0.16, 0.32); hb += gap; gap = Math.max(0.38, gap * 0.86); } }
+    const naik = [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.25];
+    plan.hits.forEach((h, i) => {
+      const rl = plan.roll(i), st = h - rl;
+      for (let s2 = st; s2 < h - 0.02; s2 += 0.042 + Math.random() * 0.008) { const k = (s2 - st) / rl; this.snare(t0 + s2, 0.04 + 0.32 * k * k); }
+      const last = i === n - 1;
+      this.thump(t0 + h, 0.9); this.crash(t0 + h, last ? 2.4 : 0.7, last ? 0.34 : 0.17);
+      if (last) this.fanfare(t0 + h);
+      else { const f = naik[i % naik.length]; this.brass(f, t0 + h, Math.min(0.55, plan.gap * 0.5), 0.08); this.brass(f * 1.5, t0 + h, Math.min(0.55, plan.gap * 0.5), 0.05); }
+    });
+    return lat + (c.baseLatency || 0);
+  },
+  preview() {
+    if (!this.init()) return; const on = this.on(); if (!on) lsSet('kb_und_sound', true);
+    this.start(2200); setTimeout(() => { this.landed(); this.pengumuman(undSeqPlan(3)); if (!on) lsSet('kb_und_sound', false); }, 2200);
+  }
 };
 function undSound(v) { lsSet('kb_und_sound', v === undefined ? !UNDS.on() : !!v); if (!UNDS.on()) UNDS.stop(); renderUndian(); }
 function undVol(v) { lsSet('kb_und_vol', num(v)); if (UNDS.ctx && UNDS.master) UNDS.master.gain.setValueAtTime(UNDS.vol() * 0.9, UNDS.ctx.currentTime); const o = $('#und-vol-val'); if (o) o.textContent = Math.round(num(v)) + '%'; }
@@ -5311,6 +5472,8 @@ function renderPengaturan() {
             <button type="button" class="btn btn-ghost btn-sm" onclick="logoZoom(0, 100)">Reset</button></div></div>
         <div class="form-grid mt-24"><label class="field"><span>Nama aplikasi</span><input id="set-name" class="input" value="${esc(st.nama_aplikasi)}" maxlength="40" oninput="previewBrand()"><small class="field-hint">Judul browser & header</small></label>
           <label class="field"><span>Subjudul / nama unit</span><input id="set-sub" class="input" value="${esc(st.subjudul)}" maxlength="80" oninput="previewBrand()"><small class="field-hint">mis. DPU SP JBA (Serikat Pekerja)</small></label></div></div>
+      <div class="card card-pad"><div class="card-head"><div><h3><i class="bi bi-brush t-primary"></i> Tema Tampilan</h3><p>Pilih gaya tampilan aplikasi untuk semua pengguna. Klik untuk melihat langsung, lalu <b>Simpan Perubahan Identitas</b>.</p></div><span class="chip chip-soft">${TEMA_APP.length} TEMA</span></div>
+        <div class="skin-grid" id="skin-grid">${TEMA_APP.map((t) => skinTile(t, (pendingTema || st.tema_tampilan || 'klasik') === t.id)).join('')}</div></div>
       <div class="card card-pad"><div class="card-head"><h3><i class="bi bi-palette t-primary"></i> Skema Warna (Tema Dinamis)</h3><span class="chip chip-mute">CSS TOKENS</span></div>
         <div class="grid g-2 g-tight"><div class="budget-card"><b class="small">Warna utama</b><div class="row"><input type="color" id="set-p" class="color-input" value="${esc(st.warna_utama)}" oninput="previewBrand()"><input class="input mono" id="set-p-hex" value="${esc(st.warna_utama)}" oninput="if(/^#[0-9a-f]{6}$/i.test(this.value)){$('#set-p').value=this.value;previewBrand()}"></div>
           <div class="swatches">${['#6247EA', '#2F6FED', '#12A150', '#DC2626', '#EA580C', '#0F766E', '#141B2B'].map((c) => `<button class="swatch" style="background:${c}" onclick="$('#set-p').value='${c}';previewBrand()" aria-label="${c}"></button>`).join('')}</div></div>
@@ -5341,7 +5504,7 @@ function renderPengaturan() {
             <small class="field-hint">0% = tidak terlihat · 100% = gambar penuh. Klik "Simpan Perubahan Identitas" untuk menerapkan.</small>
           </div></div></div>
       ${lpcEditorHtml(st)}
-      <div class="row-between"><button class="btn btn-ghost" onclick="resetBrand()"><i class="bi bi-arrow-counterclockwise"></i>Kembalikan default</button>${canW() ? '<button class="btn btn-primary" onclick="saveBrand()"><i class="bi bi-floppy"></i>Simpan Perubahan Identitas</button>' : ''}</div></div>
+      <div class="row-between" style="flex-wrap:wrap;gap:8px"><button class="btn btn-ghost" onclick="resetBrand()"><i class="bi bi-arrow-counterclockwise"></i>Kembalikan default</button>${canW() ? '<button class="btn btn-primary" onclick="saveBrand()"><i class="bi bi-floppy"></i>Simpan Perubahan Identitas</button>' : ''}</div></div>
       <div class="card card-pad" style="align-self:start"><div class="card-head"><h3><span class="dot" style="background:var(--in)"></span> Pratinjau Langsung</h3><span class="chip chip-soft">REALTIME</span></div>
         <div class="mini-preview" id="mini-prev"><div class="mp-sb"><b style="color:#fff;font-size:11px" class="ellipsis" id="mp-name">${esc(st.nama_aplikasi)}</b><span class="on"></span><span></span><span></span><span></span></div>
           <div class="mp-main"><div class="card" style="padding:12px"><span class="small muted">Total saldo kas</span><div class="mono" style="font-weight:600;font-size:16px">${fmtRp(totalKas())}</div></div>
@@ -5415,13 +5578,30 @@ function renderPengaturan() {
     `<div class="tabs">${tabs.map(([k, l, i]) => `<button class="${tab === k ? 'on' : ''}" onclick="S.ui.setTab='${k}';renderPengaturan()"><i class="bi ${i}"></i>${l}</button>`).join('')}</div>` + body;
   lpcMini();
 }
+let pendingTema = null;
+function skinTile(t, on) {
+  const ink = t.sbInk || 'rgba(255,255,255,.9)';
+  return `<button type="button" class="skin-tile ${on ? 'on' : ''}" data-skin-id="${t.id}" onclick="pilihTemaApp('${t.id}')" aria-pressed="${on}" title="${esc(t.nama)}">
+    <span class="skin-mock" aria-hidden="true"><span class="sb" style="background:${t.sb};color:${ink}${t.sbInk ? ';box-shadow:inset -1px 0 0 #ECE6FB' : ''}"><i></i><i class="on" style="background:${t.p}"></i><i></i><i></i></span>
+      <span class="cv" style="background:${t.cv}"><b style="background:${t.p}"></b><i></i><i></i><i class="w" style="background:linear-gradient(90deg,${t.p},${t.a})"></i></span></span>
+    <span class="nm"><span class="dot" style="background:${t.p}"></span>${esc(t.nama)}</span><small>${esc(t.ket)}</small></button>`;
+}
+/** Pratinjau tema (belum tersimpan): warna utama/aksen ikut tema, bisa diubah lagi di Skema Warna. */
+function pilihTemaApp(id) {
+  const t = temaApp(id); pendingTema = t.id;
+  $$('#skin-grid .skin-tile').forEach((b) => { const on = b.dataset.skinId === t.id; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  if ($('#set-p')) { $('#set-p').value = t.p; $('#set-a').value = t.a; previewBrand(); }
+  applySkin(t.id, t.p);
+  toast('Pratinjau tema "' + t.nama + '". Klik Simpan Perubahan Identitas untuk menerapkan ke semua pengguna.', 'info');
+}
 function previewBrand() {
   const p = $('#set-p').value, a = $('#set-a').value;
   $('#set-p-hex').value = p; $('#set-a-hex').value = a;
   document.documentElement.style.setProperty('--primary', p); document.documentElement.style.setProperty('--accent', a);
+  applySkin(pendingTema || S.settings.tema_tampilan, p);
   $('#mp-name').textContent = $('#set-name').value;
 }
-function resetBrand() { $('#set-p').value = '#6247EA'; $('#set-a').value = '#F59E0B'; previewBrand(); }
+function resetBrand() { pendingTema = 'klasik'; $$('#skin-grid .skin-tile').forEach((b) => { const on = b.dataset.skinId === 'klasik'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); $('#set-p').value = '#6247EA'; $('#set-a').value = '#F59E0B'; previewBrand(); }
 let pendingLogo = null;
 function uploadLogo(input) {
   const f = input.files[0]; if (!f) return;
@@ -5609,6 +5789,7 @@ function removeLogo() { pendingLogo = ''; $('#set-logo').innerHTML = '<i class="
 function saveBrand() {
   const data = { nama_aplikasi: $('#set-name').value.trim() || APP_NAME_DEFAULT, subjudul: $('#set-sub').value.trim(), warna_utama: $('#set-p').value, warna_aksen: $('#set-a').value,
     mode_default: ($('#set-mode .on') || {}).dataset ? $('#set-mode .on').dataset.v : 'light' };
+  if (pendingTema) data.tema_tampilan = pendingTema;
   if (pendingLogo !== null) { data.logo_data = pendingLogo; data.link_logo = ''; }
   if ($('#set-logo-k')) data.logo_skala = String($('#set-logo-k').value);
   if (pendingWall !== null) data.login_bg = pendingWall;
@@ -5621,7 +5802,7 @@ function saveBrand() {
   }
   if ($('#lpc-form')) { data.lp_bg_opacity = $('#set-lpw-op').value; data.lp_config = JSON.stringify(readLpc()); }
   const prev = Object.assign({}, S.settings);
-  Object.assign(S.settings, data); applyBrand(S.settings); saveSnapshot(); pendingLogo = null; pendingWall = null; pendingLpWall = null; pendingLoginLogo = null;
+  Object.assign(S.settings, data); applyBrand(S.settings); saveSnapshot(); pendingLogo = null; pendingWall = null; pendingLpWall = null; pendingLoginLogo = null; pendingTema = null;
   toast('Identitas diterapkan.', 'success', 'Berhasil disimpan');
   enqueue(() => api('savePengaturan', S.token, data).then((res) => { S.settings = res.data.settings; S.meta.version = res.data.version; })
     .catch((e) => { S.settings = prev; applyBrand(prev); toast(e.message, 'error', 'Gagal menyimpan pengaturan'); }));
@@ -5893,6 +6074,7 @@ function renderUcapan() {
   <div class="tabs mt-24">${tabs.map(([k, l, i]) => `<button class="${u.tab === k ? 'on' : ''}" onclick="S.ui.uc.tab='${k}';renderUcapan()"><i class="bi ${i}"></i>${l}</button>`).join('')}</div>
   <div id="uc-body">${u.tab === 'hari' ? ucHariHtml() : u.tab === 'template' ? ucTemplateHtml() : u.tab === 'penerima' ? ucPenerimaHtml() : u.tab === 'riwayat' ? ucRiwayatHtml() : ucJadwalHtml(jadwal60)}</div>`;
   if (u.tab === 'template') ucGambarThumbs();
+  if (isSuper() && !UC_SYNC.run && !UC_SYNC.err && !UC_SYNC.timer && S.db.TemplateUcapan.some(ucPerluUnggah)) UC_SYNC.timer = setTimeout(() => { UC_SYNC.timer = 0; if (S.current === 'ucapan') ucSinkronKartu(false); }, 900);
 }
 
 function ucRel(iso) {
@@ -5978,15 +6160,94 @@ function ucFormHari(id) {
 }
 
 // ── Tab Template & Kartu
+/** Teks bersama semua kartu (diatur Super Admin): sub judul di bawah logo & di kaki kartu, dan kalimat pengantar. */
+const KARTU_SUBJUDUL_DEF = 'DPU SP JBA', KARTU_PENGANTAR_DEF = 'Mengucapkan', KARTU_VER = '22';
+const kartuSubjudul = () => String((S.settings && S.settings.kartu_subjudul) || '').trim() || KARTU_SUBJUDUL_DEF;
+const kartuPengantar = () => (S.settings && S.settings.kartu_pengantar !== undefined ? String(S.settings.kartu_pengantar).trim() : KARTU_PENGANTAR_DEF);
+/** Sidik kartu: berubah bila desain, teks bersama, atau logo berubah → kartu perlu diunggah ulang. */
+function ucSig(k) {
+  const st = S.settings || {}, c = Object.assign({}, k); delete c.sig;
+  const logo = c.logo !== false ? (st.logo_data ? 'd' + st.logo_data.length + st.logo_data.slice(-32) : st.link_logo || '') : '-';
+  const str = JSON.stringify([KARTU_VER, Object.keys(c).sort().map((x) => [x, c[x]]), kartuSubjudul(), kartuPengantar(), logo]);
+  let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+const ucPerluUnggah = (t) => !t.url_kartu || ucKartu(t).sig !== ucSig(ucKartu(t));
 function ucTemplateHtml() {
   const list = S.db.TemplateUcapan.slice().sort((a, b) => (a.jenis === 'ultah' ? -1 : b.jenis === 'ultah' ? 1 : 0));
   if (!list.length) return emptyState('bi-hourglass', 'Menyiapkan template…', '');
-  return `<p class="small muted" style="margin:0 0 14px">Setiap jenis ucapan punya <b>pesan WhatsApp</b> dan <b>kartu ucapan</b> sendiri. ${isSuper() ? 'Klik kartu untuk mengubah teks, warna, dan tema.' : 'Hanya Super Admin yang dapat mengubah template.'}</p>
-  <div class="uc-grid">${list.map((t) => { const k = ucKartu(t); return `<div class="uc-tpl card ${String(t.aktif) === 'false' ? 'off' : ''}">
-    <button class="uc-thumb" onclick="ucEditTemplate('${t.jenis}')" aria-label="${isSuper() ? 'Ubah' : 'Lihat'} ${esc(t.nama)}"><canvas data-uc-thumb="${t.jenis}" width="270" height="338"></canvas></button>
-    <div class="uc-tpl-info"><div style="min-width:0"><b class="ellipsis">${esc(t.nama)}</b><div class="small muted">${ucAgamaList(t.agama).map((a) => (a === 'Semua' ? 'Semua anggota' : a)).join(', ')} · ${esc((KARTU_TEMA[k.tema] || {}).nama || 'Kustom')}</div></div>
-      ${isSuper() ? `<label class="switch" title="Kirim otomatis"><input type="checkbox" ${String(t.aktif) !== 'false' ? 'checked' : ''} onchange="ucToggleTpl('${t.jenis}', this.checked)"><span></span></label>` : `<span class="chip ${String(t.aktif) === 'false' ? 'chip-mute' : 'chip-in'}">${String(t.aktif) === 'false' ? 'Nonaktif' : 'Aktif'}</span>`}</div>
-    ${t.url_kartu ? '' : '<div class="uc-tpl-warn"><i class="bi bi-cloud-arrow-up"></i> Kartu belum diunggah</div>'}</div>`; }).join('')}</div>`;
+  const sup = isSuper(), perlu = list.filter(ucPerluUnggah).length;
+  return `${sup ? `<div class="card card-pad" style="margin-bottom:16px"><div class="card-head" style="margin-bottom:12px"><div><h3><i class="bi bi-type t-primary"></i> Teks pada semua kartu</h3><p>Sub judul tampil di bawah logo dan di bagian bawah kartu (setelah "Keluarga Besar").</p></div><span class="chip chip-soft">SUPER ADMIN</span></div>
+    <div class="uc-idk"><label class="field"><span>Sub judul (nama unit)</span><input id="uc-idk-sub" class="input" maxlength="40" value="${esc(kartuSubjudul())}" placeholder="${KARTU_SUBJUDUL_DEF}"></label>
+      <label class="field"><span>Tulisan di bawah sub judul</span><input id="uc-idk-pg" class="input" maxlength="40" value="${esc(kartuPengantar())}" placeholder="${KARTU_PENGANTAR_DEF} (kosongkan bila tidak perlu)"></label>
+      <button class="btn btn-primary" id="uc-idk-save" onclick="ucSimpanIdentitasKartu()"><i class="bi bi-check2"></i>Simpan & Perbarui Kartu</button></div></div>` : ''}
+  <div id="uc-sync">${ucSyncHtml(perlu, list.length)}</div>
+  <p class="small muted" style="margin:0 0 14px">Setiap jenis ucapan punya <b>pesan WhatsApp</b> dan <b>kartu ucapan</b> sendiri. ${sup ? 'Klik kartu untuk mengubah teks, warna, dan tema. Kartu otomatis diunggah ke Google Drive agar ikut terkirim di WhatsApp.' : 'Hanya Super Admin yang dapat mengubah template.'}</p>
+  <div class="uc-grid">${list.map((t) => { const k = ucKartu(t), on = String(t.aktif) !== 'false'; return `<div class="uc-tpl card ${on ? '' : 'off'}">
+    <button class="uc-thumb" onclick="ucEditTemplate('${t.jenis}')" aria-label="${sup ? 'Ubah' : 'Lihat'} ${esc(t.nama)}"><canvas data-uc-thumb="${t.jenis}" width="270" height="338"></canvas></button>
+    <div class="uc-tpl-info"><div style="min-width:0"><b class="ellipsis" title="${esc(t.nama)}">${esc(t.nama)}</b><div class="small muted">${ucAgamaList(t.agama).map((a) => (a === 'Semua' ? 'Semua anggota' : a)).join(', ')} · ${esc((KARTU_TEMA[k.tema] || {}).nama || 'Kustom')}</div></div>
+      ${sup ? `<label class="switch" title="${on ? 'Aktif — dikirim otomatis' : 'Nonaktif — tidak dikirim'}"><input type="checkbox" ${on ? 'checked' : ''} aria-label="Kirim otomatis ${esc(t.nama)}" onchange="ucToggleTpl('${t.jenis}', this.checked)"><span></span></label>` : `<span class="chip ${on ? 'chip-in' : 'chip-mute'}">${on ? 'Aktif' : 'Nonaktif'}</span>`}</div>
+    <div class="uc-tpl-st ${ucPerluUnggah(t) || (UC_SYNC.run && UC_SYNC.now === t.jenis) ? 'wait' : 'ok'}" data-uc-st="${t.jenis}">${ucStHtml(t)}</div></div>`; }).join('')}</div>`;
+}
+function ucStHtml(t) {
+  if (UC_SYNC.run && UC_SYNC.now === t.jenis) return '<span class="spin"></span> Mengunggah kartu…';
+  if (!ucPerluUnggah(t)) return '<i class="bi bi-check-circle-fill"></i> Kartu siap dikirim';
+  return t.url_kartu ? '<i class="bi bi-arrow-repeat"></i> Menunggu diperbarui' : '<i class="bi bi-cloud-arrow-up"></i> Menunggu diunggah';
+}
+function ucSyncHtml(perlu, total) {
+  if (UC_SYNC.run) return `<div class="callout uc-sync"><i class="bi bi-cloud-arrow-up t-primary"></i><span><b>Mengunggah kartu ucapan ${UC_SYNC.done + 1} dari ${UC_SYNC.total}…</b> Biarkan halaman ini terbuka sebentar.</span><div class="bar"><span style="width:${Math.round((UC_SYNC.done / Math.max(1, UC_SYNC.total)) * 100)}%"></span></div></div>`;
+  if (UC_SYNC.err && perlu) return `<div class="callout warn uc-sync"><i class="bi bi-exclamation-triangle t-warn"></i><span><b>${perlu} kartu belum terunggah.</b> ${esc(UC_SYNC.err)}</span>${isSuper() ? '<button class="btn btn-secondary btn-sm" onclick="ucSinkronKartu(true)"><i class="bi bi-arrow-repeat"></i>Coba Lagi</button>' : ''}</div>`;
+  if (perlu) return `<div class="callout uc-sync"><i class="bi bi-cloud-arrow-up t-primary"></i><span><b>${perlu} dari ${total} kartu menunggu diunggah.</b> ${isSuper() ? 'Kartu diunggah otomatis saat Super Admin membuka halaman ini.' : 'Super Admin perlu membuka halaman ini agar kartu terunggah.'}</span>${isSuper() ? '<button class="btn btn-secondary btn-sm" onclick="ucSinkronKartu(true)"><i class="bi bi-cloud-arrow-up"></i>Unggah Sekarang</button>' : ''}</div>`;
+  return `<div class="callout success uc-sync"><i class="bi bi-check-circle-fill t-in"></i><span><b>Semua ${total} kartu siap dikirim.</b> Kartu terlampir otomatis pada ucapan WhatsApp${String(S.settings.ucapan_kartu) === 'false' ? ' <span class="t-warn">(lampiran kartu sedang dimatikan di Pengaturan ucapan)</span>' : ''}.</span>${isSuper() ? '<button class="btn btn-ghost btn-sm" onclick="ucSinkronKartu(true, true)" title="Gambar ulang & unggah ulang semua kartu"><i class="bi bi-arrow-repeat"></i>Unggah Ulang Semua</button>' : ''}</div>`;
+}
+/** Perbarui tampilan progres tanpa menggambar ulang seluruh halaman. */
+function ucSyncUi() {
+  if (S.current !== 'ucapan' || S.ui.uc.tab !== 'template') return;
+  const box = $('#uc-sync'); if (box) box.innerHTML = ucSyncHtml(S.db.TemplateUcapan.filter(ucPerluUnggah).length, S.db.TemplateUcapan.length);
+  S.db.TemplateUcapan.forEach((t) => { const el = $(`[data-uc-st="${t.jenis}"]`); if (el) { el.innerHTML = ucStHtml(t); el.className = 'uc-tpl-st ' + (UC_SYNC.run && UC_SYNC.now === t.jenis ? 'wait' : ucPerluUnggah(t) ? 'wait' : 'ok'); } });
+}
+const UC_SYNC = { run: false, done: 0, total: 0, now: '', err: '', timer: 0 };
+const kartuFontSiap = () => { try { return !document.fonts || (document.fonts.check('80px "Great Vibes"') && document.fonts.check('700 60px "Playfair Display"')); } catch (e) { return true; } };
+/** Gambar & unggah kartu yang belum ada / sudah berubah ke Google Drive (berurutan, di latar belakang). */
+async function ucSinkronKartu(manual, semua) {
+  if (UC_SYNC.run || !isSuper() || !S.db.TemplateUcapan.length) return;
+  if (!manual && UC_SYNC.err) return;   // otomatis tidak diulang terus setelah gagal; Super Admin bisa klik "Coba Lagi"
+  await kartuFont();
+  if (!kartuFontSiap()) { if (!manual) { UC_SYNC.auto = false; return; } toast('Huruf kartu belum termuat (periksa internet). Kartu tetap diunggah dengan huruf cadangan.', 'warning'); }
+  const list = S.db.TemplateUcapan.filter((t) => semua || ucPerluUnggah(t));
+  if (!list.length) { ucSyncUi(); return; }
+  Object.assign(UC_SYNC, { run: true, done: 0, total: list.length, err: '', now: '' }); ucSyncUi();
+  for (const t of list) {
+    if (!S.user || !isSuper()) break;
+    UC_SYNC.now = t.jenis; ucSyncUi();
+    try {
+      const k = Object.assign({}, ucKartu(t)); k.sig = ucSig(k);
+      const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350;
+      await renderKartu(cv, k);
+      let data;
+      try { data = cv.toDataURL('image/jpeg', 0.88).split(',')[1]; } catch (e) { UC_SYNC.err = 'Logo berasal dari tautan luar sehingga kartu tidak bisa dibuat. Unggah file logo di Pengaturan → Identitas.'; break; }
+      const res = await api('simpanTemplateUcapan', S.token, t.jenis, { kartu: k }, { data, mime: 'image/jpeg' });
+      replaceLocal('TemplateUcapan', res.data.record.id, res.data.record); S.meta.version = res.data.version;
+      UC_SYNC.done++;
+    } catch (e) { UC_SYNC.err = e.message; break; }
+  }
+  const ok = UC_SYNC.done, gagal = UC_SYNC.err;
+  Object.assign(UC_SYNC, { run: false, now: '' });
+  saveSnapshot();
+  if (S.current === 'ucapan') renderUcapan();
+  if (ok) toast(ok + ' kartu ucapan terunggah ke Google Drive dan siap dikirim.', 'success');
+  if (gagal) toast(gagal, 'error', 'Kartu gagal diunggah');
+}
+async function ucSimpanIdentitasKartu() {
+  const sub = $('#uc-idk-sub').value.trim(), pg = $('#uc-idk-pg').value.trim();
+  if (!sub) { toast('Sub judul wajib diisi.', 'warning'); $('#uc-idk-sub').focus(); return; }
+  const b = $('#uc-idk-save'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Menyimpan…';
+  try {
+    const res = await api('savePengaturan', S.token, { kartu_subjudul: sub, kartu_pengantar: pg });
+    Object.assign(S.settings, { kartu_subjudul: sub, kartu_pengantar: pg }); if (res.data && res.data.version) S.meta.version = res.data.version;
+    saveSnapshot(); toast('Teks kartu disimpan. Semua kartu diperbarui…', 'success');
+    renderUcapan(); ucSinkronKartu(true);
+  } catch (e) { b.disabled = false; b.innerHTML = '<i class="bi bi-check2"></i>Simpan & Perbarui Kartu'; toast(e.message, 'error'); }
 }
 async function ucGambarThumbs() {
   for (const cv of $$('canvas[data-uc-thumb]')) {
@@ -6019,7 +6280,7 @@ function ucEditTemplate(jenis) {
           <label class="field"><span>Judul</span><input class="input" maxlength="60" value="${esc(k.judul || '')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.judul=this.value;ucEdPrev()"></label></div>
         <label class="field full"><span>Kutipan / doa pada kartu</span><textarea class="textarea" rows="2" maxlength="180" ${sup ? '' : 'disabled'} oninput="UC_ED.k.isi=this.value;ucEdPrev()">${esc(k.isi || '')}</textarea></label>
         <div class="grid g-2" style="gap:10px">
-          <label class="field"><span>Teks penutup</span><input class="input" maxlength="40" value="${esc(k.penutup || 'Keluarga Besar')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.penutup=this.value;ucEdPrev()"></label>
+          <label class="field"><span>Teks penutup</span><input class="input" maxlength="40" value="${esc(k.penutup || 'Keluarga Besar')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.penutup=this.value;ucEdPrev()"><small class="field-hint">Diikuti sub judul "${esc(kartuSubjudul())}"</small></label>
           <label class="field check" style="flex-direction:row;align-items:center;margin-top:22px"><input type="checkbox" ${k.logo !== false ? 'checked' : ''} ${sup ? '' : 'disabled'} onchange="UC_ED.k.logo=this.checked;ucEdPrev()"> Tampilkan logo</label></div>
         <label class="field full"><span>Pesan WhatsApp</span><textarea id="uc-pesan" class="textarea mono" rows="9" maxlength="3000" ${sup ? '' : 'disabled'} oninput="ucEdPesan()">${esc(t.pesan || '')}</textarea>
           <small class="field-hint">Klik untuk menyisipkan: ${UC_PLACEHOLDER.map(([p, l]) => `<button type="button" class="chip chip-soft" ${sup ? '' : 'disabled'} title="${esc(l)}" onclick="ucSisip('${p}')">${p}</button>`).join(' ')} · *tebal* · _miring_</small></label>
@@ -6052,6 +6313,7 @@ async function ucSimpanTemplate() {
     await renderKartu(cv, UC_ED.k);
     let data;
     try { data = cv.toDataURL('image/jpeg', 0.9).split(',')[1]; } catch (e) { data = null; }
+    if (data) UC_ED.k.sig = ucSig(UC_ED.k); else delete UC_ED.k.sig;
     const res = await api('simpanTemplateUcapan', S.token, UC_ED.jenis, { pesan: $('#uc-pesan').value, kartu: UC_ED.k }, data ? { data, mime: 'image/jpeg' } : null);
     replaceLocal('TemplateUcapan', res.data.record.id, res.data.record); S.meta.version = res.data.version; afterLocalChange('TemplateUcapan');
     closeModal(); toast(res.message + (data ? ' Kartu terunggah ke Google Drive.' : ''), 'success');
@@ -6223,7 +6485,7 @@ async function renderKartu(cv, cfg, opts) {
   ctx.setTransform(sc, 0, 0, sc, 0, 0);
   ctx.clearRect(0, 0, W, H);
   const rnd = rngSeed(cfg.tema + w1 + ak);
-  const bebasTeks = (x, y) => !(x > 120 && x < W - 120 && y > 640 && y < H - 120);   // pola tidak menimpa judul & kutipan
+  const bebasTeks = (x, y) => !(x > 120 && x < W - 120 && y > 640 && y < H - 120) && !(x > 200 && x < W - 200 && y > 96 && y < 345);   // pola tidak menimpa logo, sub judul, judul & kutipan
   // 1. Latar gradasi + cahaya
   let g = ctx.createLinearGradient(0, 0, W * 0.3, H); g.addColorStop(0, w1); g.addColorStop(1, w2);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -6249,8 +6511,8 @@ async function renderKartu(cv, cfg, opts) {
   ctx.strokeStyle = hexRgba(ak, 0.95); ctx.lineWidth = 3; kRound(ctx, 38, 38, W - 76, H - 76, 26); ctx.stroke();
   ctx.strokeStyle = hexRgba(ak, 0.45); ctx.lineWidth = 1.2; kRound(ctx, 56, 56, W - 112, H - 112, 18); ctx.stroke();
   [[56, 56, 1, 1], [W - 56, 56, -1, 1], [56, H - 56, 1, -1], [W - 56, H - 56, -1, -1]].forEach(([x, y, sx, sy]) => kSudut(ctx, x, y, sx, sy, ak));
-  // 4. Kepala: logo + nama organisasi
-  const nama = st.nama_aplikasi || APP_NAME_DEFAULT, sub = st.subjudul || '';
+  // 4. Kepala: logo + sub judul (nama unit) + kalimat pengantar ("Mengucapkan")
+  const subj = kartuSubjudul(), peng = kartuPengantar();
   let yTop = 150;
   const logoSrc = cfg.logo !== false ? st.logo_data || st.link_logo || '' : '';
   const logo = await kartuLogo(logoSrc);
@@ -6262,10 +6524,10 @@ async function renderKartu(cv, cfg, opts) {
     yTop = 268;
   }
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = ak; ctx.font = '600 25px Inter, sans-serif'; kSpaced(ctx, nama.toUpperCase(), W / 2, yTop, 5);
-  if (sub) { ctx.fillStyle = hexRgba(tx, 0.7); ctx.font = '500 21px Inter, sans-serif'; ctx.fillText(sub, W / 2, yTop + 34); }
+  ctx.fillStyle = ak; kSpacedFit(ctx, subj.toUpperCase(), W / 2, yTop + 4, '700 {s}px Inter, sans-serif', 32, 820, 20, 6);
+  if (peng) { ctx.fillStyle = hexRgba(tx, 0.88); fitFont(ctx, peng, 'italic 400 {s}px "Playfair Display", Georgia, serif', 32, 760, 22); ctx.fillText(peng, W / 2, yTop + 52); }
   // 5. Motif utama
-  const my = logo ? 520 : 476, ms = 0.88;
+  const my = (logo ? 520 : 476) + (peng ? 22 : 0), ms = 0.88;
   ctx.save(); ctx.translate(W / 2, my); ctx.scale(ms, ms); ctx.translate(-W / 2, -my); kMotif(ctx, tm.motif, W / 2, my, ak, tx, rnd, terang); ctx.restore();
   // 6. Judul
   let y = my + 250;
@@ -6277,15 +6539,20 @@ async function renderKartu(cv, cfg, opts) {
   y += 6; kPemisah(ctx, W / 2, y, ak); y += 58;
   // 8. Kutipan
   if (cfg.isi) { ctx.fillStyle = hexRgba(tx, 0.92); ctx.font = 'italic 400 33px "Playfair Display", Georgia, serif'; wrapLines(ctx, cfg.isi, 800).slice(0, 4).forEach((l) => { ctx.fillText(l, W / 2, y); y += 46; }); }
-  // 9. Kaki: penutup + organisasi
-  const yb = H - 150;
+  // 9. Kaki: penutup ("Keluarga Besar") + sub judul
+  const yb = H - 140;
   ctx.fillStyle = ak; ctx.font = '600 22px Inter, sans-serif'; kSpaced(ctx, String(cfg.penutup || 'Keluarga Besar').toUpperCase(), W / 2, yb, 4);
-  ctx.fillStyle = tx; fitFont(ctx, nama, '700 {s}px "Playfair Display", Georgia, serif', 46, 820, 28); ctx.fillText(nama, W / 2, yb + 54);
-  if (sub) { ctx.fillStyle = hexRgba(tx, 0.7); ctx.font = '500 20px Inter, sans-serif'; ctx.fillText(sub, W / 2, yb + 86); }
+  ctx.fillStyle = tx; fitFont(ctx, subj, '700 {s}px "Playfair Display", Georgia, serif', 48, 820, 28); ctx.fillText(subj, W / 2, yb + 56);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   return cv;
 }
 function kRound(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+/** Teks berjarak huruf yang dikecilkan otomatis agar muat dalam lebar maks. */
+function kSpacedFit(ctx, t, x, y, fontTpl, size, maxW, minSize, sp) {
+  let s = size;
+  for (; s > minSize; s -= 1) { ctx.font = fontTpl.replace('{s}', s); const w = t.split('').reduce((a, c) => a + ctx.measureText(c).width, 0) + (sp * s / size) * (t.length - 1); if (w <= maxW) break; }
+  ctx.font = fontTpl.replace('{s}', s); kSpaced(ctx, t, x, y, sp * s / size);
+}
 function kSpaced(ctx, t, x, y, sp) { const ws = t.split('').map((c) => ctx.measureText(c).width); const tot = ws.reduce((a, b) => a + b, 0) + sp * (t.length - 1); let cx = x - tot / 2; const al = ctx.textAlign; ctx.textAlign = 'left'; t.split('').forEach((c, i) => { ctx.fillText(c, cx, y); cx += ws[i] + sp; }); ctx.textAlign = al; }
 function kStar8(ctx, x, y, r) { ctx.beginPath(); for (let i = 0; i < 16; i++) { const a = (Math.PI / 8) * i - Math.PI / 2, rr = i % 2 ? r * 0.62 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); }
 function kStar(ctx, x, y, r, n, inner) { ctx.beginPath(); for (let i = 0; i < n * 2; i++) { const a = (Math.PI / n) * i - Math.PI / 2, rr = i % 2 ? r * (inner || 0.45) : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); }

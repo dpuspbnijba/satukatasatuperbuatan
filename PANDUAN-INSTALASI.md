@@ -1,4 +1,4 @@
-# PANDUAN INSTALASI — DPU SP JBA v2.1.0
+# PANDUAN INSTALASI — DPU SP JBA v2.2.0
 ### Server di Google Apps Script (API) + Tampilan di GitHub Pages · untuk Windows
 
 Ada **dua bagian** yang dipasang di dua tempat berbeda:
@@ -8,60 +8,65 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | **Server (API)** | `Kode.gs` (berkas terpisah, **tidak** ada di ZIP) | script.google.com |
 | **Tampilan** | isi ZIP `dpuspjba-web.zip` | GitHub Pages |
 
-**Sudah memakai v2.0.0?** Langsung ke bagian **0** di bawah. Pemasangan baru: bagian **A → B → C**.
+**Sudah memakai v2.1.0?** Langsung ke bagian **0**. Masih v2.0.0? Kerjakan bagian **0** lalu **0B**. Pemasangan baru: bagian **A → B → C**, lalu **0B**.
 
 ---
 
-## 0. Memperbarui v2.0.0 → v2.1.0 (± 10 menit)
+## 0. Memperbarui ke v2.2.0 (± 5 menit)
 
-### Yang baru di v2.1.0
-1. **Nama aplikasi menjadi DPU SP JBA.** Nama di Pengaturan, teks halaman depan, folder Google Drive (`DPU_SP_JBA_App`), dan database (`DB_DPU_SP_JBA`) **diganti otomatis** saat aplikasi pertama dibuka setelah pembaruan.
-2. **Halaman baru "Ucapan & Hari Besar"** (menu *Organisasi*):
-   - Mengirim ucapan **ulang tahun** dan **hari besar** Islam, Kristen, Katolik, Hindu, dan Buddha ke WhatsApp anggota secara otomatis sesuai tanggalnya.
-   - Penerima diambil dari daftar di halaman **Anggota**, berdasarkan tanggal lahir dan agama masing-masing.
-   - Ada **15 template pesan** dan **kartu ucapan** (11 tema, ukuran 1080×1350). Super Admin bisa mengubah teks, warna, tema, dan isi pesan.
-   - Ada **jadwal 60 hari ke depan**, **daftar hari besar 2026–2028** (sumber: SKB 3 Menteri), pengaturan **penerima** (berhenti berlangganan dan cek nomor WA), serta **riwayat kirim** dengan tombol *Kirim Ulang* dan *Batalkan*.
-   - Pesan dikirim **bertahap** (10/20/50 pesan per menit) dengan **jeda acak** antar pesan, supaya nomor WhatsApp tidak diblokir.
-3. **Tambah Anggota** kini mewajibkan **Jabatan, Unit, No. HP/WhatsApp, Tanggal Lahir, dan Agama**. Format Excel impor anggota ikut berubah. Unduh format baru di *Anggota → Impor → Unduh Format Excel*.
-4. **Gathering → tab "Pembagian Kamar"**:
-   - Kapasitas setiap kamar bisa diatur sendiri.
-   - Peserta bisa dibagi **otomatis**, atau dimasukkan dan dipindahkan secara **seret & lepas**.
-   - Hasilnya bisa diunduh sebagai **Excel** atau **PDF** yang siap cetak.
-   - Bisa **impor massal** dari Excel. Format contohnya ada di tombol *Impor → Unduh Format Excel*.
+### Yang baru di v2.2.0
+1. **Halaman Ucapan → Template & Kartu dirapikan.**
+   - Semua kartu kini sama ukurannya, dan tombol aktif/nonaktif tidak lagi keluar dari kotaknya.
+   - **Semua kartu diunggah otomatis** ke Google Drive saat Super Admin membuka halaman ini (ada progresnya). Kartu yang siap bertanda **"Kartu siap dikirim"**, dan ucapan WhatsApp langsung melampirkan kartunya.
+   - Teks kartu baru: di bawah logo tertulis sub judul **"DPU SP JBA"**, lalu **"Mengucapkan"**. Di bagian bawah tertulis **"Keluarga Besar"** + **"DPU SP JBA"**.
+   - Kedua teks itu bisa diubah Super Admin di kotak **"Teks pada semua kartu"**. Setelah disimpan, semua kartu otomatis dibuat ulang dan diunggah ulang.
+2. **Spin Wheel: pengumuman pemenang seirama musik.**
+   - Setelah roda berhenti, musik tegang (denyut bass, genderang menggulung, dengung yang makin tinggi) mengiringi pengumuman.
+   - Bila pemenang lebih dari satu, nama **muncul satu per satu**. Setiap nama keluar tepat pada hentakan musik, dengan nada yang naik dari nama ke nama, dan ditutup fanfare di nama terakhir.
+   - Sebelum muncul, kotak nama bergetar dan nama-nama peserta berganti cepat mengikuti irama genderang.
+   - Tombol **Tampilkan Semua** membuka semua nama sekaligus. Daftar pemenang di samping baru terisi setelah semua nama diumumkan.
+   - Semua nada dibuat langsung oleh aplikasi; tidak perlu berkas musik atau internet tambahan.
+3. **Tema tampilan.** Super Admin bisa memilih satu dari 12 tema di **Pengaturan → Identitas → Tema Tampilan**:
+   Ungu Klasik, Biru Samudra, Hijau Zamrud, Merah Juang, Senja Jingga, Hitam Emas, Pastel Lavender, Teal Modern, Malam Neon, Monokrom, Batik Nusantara, dan Aurora.
+   - Tema mengubah menu samping, latar, dan warna aplikasi untuk **semua pengguna**, di mode terang maupun gelap.
 
-### Langkah 1 — Perbarui server (Apps Script)
-1. Buka proyek Apps Script Anda. (Opsional) Klik judul proyek di kiri atas → ganti menjadi **DPU SP JBA API**.
-2. Buka file **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.1.0** → **Ctrl+S**.
-3. Di menu fungsi (sebelah ▶ Jalankan) pilih **`setupAppEnvironment`** → **▶ Jalankan**. Bila muncul *Otorisasi diperlukan*, klik **Izinkan** seperti saat pemasangan pertama.
-   Langkah ini **aman**: data tidak berubah. Langkah ini hanya menyiapkan tab baru, folder `Kartu_Ucapan`, daftar hari besar, dan nama baru.
-4. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.1.0` → **Terapkan**.
-   URL `/exec` **tetap sama**, jadi `js/config.js` tidak perlu diubah.
+### Langkah 1 — Server (Apps Script)
+1. Buka proyek Apps Script yang URL-nya ada di `js/config.js`. Cek di **Terapkan → Kelola deployment**.
+2. Buka **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.2.0** → **Ctrl+S**.
+3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.2.0` → **Terapkan**. URL `/exec` tetap sama.
 
-### Langkah 2 — Perbarui tampilan (GitHub Pages)
-1. (Disarankan) Ganti nama folder tampilan di komputer Anda menjadi **`dpuspjba-web`**: klik kanan folder → **Ganti nama**. Ini aman: riwayat git ikut pindah bersama folder.
-2. Ekstrak `dpuspjba-web.zip`. **Salin semua isinya** ke folder tampilan Anda (folder yang berisi `index.html`). Pilih **Ganti file di tujuan** bila ditanya.
-   `js/config.js` di ZIP sudah berisi URL server Anda.
-3. Buka folder itu di File Explorer → klik **address bar** → ketik `powershell` → Enter. Jalankan satu per satu:
+### Langkah 2 — Tampilan (GitHub Pages)
+1. Ekstrak `dpuspjba-web.zip`. **Salin semua isinya** ke folder tampilan Anda (folder yang berisi `index.html`), lalu pilih **Ganti file di tujuan**.
+2. Buka PowerShell di folder itu dan jalankan satu per satu:
    ```powershell
    git add .
-   git commit -m "DPU SP JBA v2.1.0"
+   git commit -m "DPU SP JBA v2.2.0"
    git push
    ```
-4. Tunggu 1–2 menit → buka situs → tekan **Ctrl+Shift+R**.
+3. Tunggu 1–2 menit → buka situs → **Ctrl+Shift+R**.
 
-### Langkah 3 — Aktifkan ucapan WhatsApp otomatis (Super Admin)
-1. **Pengaturan → Notifikasi**: pilih mode WhatsApp **Gateway** dan isi **token Fonnte**. Token disimpan aman di server dan tidak tampil di layar.
-2. Buka **Ucapan & Hari Besar → Pengaturan**:
+### Langkah 3 — Setelah pembaruan (Super Admin)
+1. Buka **Ucapan & Hari Besar → Template & Kartu**. Biarkan halaman terbuka ± 1 menit sampai muncul **"Semua 15 kartu siap dikirim"**.
+2. (Opsional) Ubah teks kartu di kotak **"Teks pada semua kartu"** → **Simpan & Perbarui Kartu**.
+3. (Opsional) Pilih tema di **Pengaturan → Identitas → Tema Tampilan** → **Simpan Perubahan Identitas**.
+
+> 💡 Kartu harus memakai **logo yang diunggah sebagai file** (Pengaturan → Identitas → Unggah Logo). Logo berupa tautan dari situs lain tidak bisa digambar ke kartu.
+>
+> 💡 Agar kartu ikut terkirim, **Lampirkan kartu ucapan** di Ucapan → Pengaturan harus dicentang, dan paket Fonnte harus mendukung lampiran gambar. Bila belum mendukung, ucapan tetap terkirim sebagai teks.
+
+---
+
+## 0B. Mengaktifkan ucapan WhatsApp otomatis (Super Admin)
+1. Bila memperbarui dari v2.0.0: jalankan sekali fungsi **`setupAppEnvironment`** di editor Apps Script. Langkah ini aman (data tidak berubah); fungsinya menyiapkan tab baru, folder `Kartu_Ucapan`, dan daftar hari besar.
+2. **Pengaturan → Notifikasi**: pilih mode WhatsApp **Gateway** dan isi **token Fonnte**. Token disimpan aman di server dan tidak tampil di layar.
+3. Buka **Ucapan & Hari Besar → Pengaturan**:
    - Centang **Kirim ucapan otomatis**.
    - Pilih jam kirim (mis. 07.00 WIB), ukuran batch, dan jeda.
    - Klik **Simpan**.
-3. Buka tab **Template & Kartu** → klik setiap kartu → sesuaikan → **Simpan**. Kartu otomatis diunggah ke Google Drive (`DPU_SP_JBA_App › Kartu_Ucapan`).
-   Gunakan **Kirim Tes** untuk mencoba ke nomor Anda sendiri.
-4. Buka tab **Penerima** → **Validasi Nomor WA** untuk menandai nomor yang tidak terdaftar di WhatsApp. Nomor yang tidak terdaftar akan dilewati.
-5. Lengkapi data anggota lama: filter **"Data belum lengkap"** di tab Penerima menunjukkan anggota yang belum punya tanggal lahir, agama, atau No. HP.
+4. Buka tab **Template & Kartu**, lalu tunggu sampai semua kartu siap. Klik kartu untuk mengubah teks, warna, atau tema, lalu klik **Simpan**. Gunakan **Kirim Tes** untuk mencoba ke nomor Anda sendiri.
+5. Buka tab **Penerima** → **Validasi Nomor WA** untuk menandai nomor yang tidak terdaftar di WhatsApp. Nomor yang tidak terdaftar akan dilewati.
+6. Lengkapi data anggota lama. Filter **"Data belum lengkap"** di tab Penerima menunjukkan anggota yang belum punya tanggal lahir, agama, atau No. HP.
 
-> 💡 **Kartu bergambar** memerlukan paket Fonnte yang mendukung lampiran. Bila paket Anda belum mendukung, aplikasi otomatis mengirim **teks saja**, dan riwayat mencatat "Terkirim tanpa kartu".
->
 > 📅 **Tanggal hari besar 2028** (Idul Fitri, Idul Adha, Nyepi, Waisak, dll.) baru bisa diisi setelah SKB 3 Menteri 2028 terbit. Aplikasi akan menampilkan peringatan. Tambahkan lewat tab **Hari Besar → Tambah Hari Besar**.
 
 ---
@@ -78,12 +83,12 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    - Buka **Log eksekusi** di bawah. Pastikan ada `✅ Setup selesai.`
    - **Catat akun awal** yang tampil (contoh `superadmin / Ab3dEf9h (Super Admin)`). Akun ini hanya ditampilkan **sekali**.
 5. Klik **Terapkan** (kanan atas) → **Deployment baru** → ikon ⚙️ di "Pilih jenis" → **Aplikasi web**:
-   - Deskripsi: `DPU SP JBA API v2.1.0`
+   - Deskripsi: `DPU SP JBA API v2.2.0`
    - **Jalankan sebagai: Saya**
    - **Yang memiliki akses: Siapa saja** ← wajib. Bila dipilih "Siapa saja yang memiliki Akun Google", tampilan tidak bisa terhubung.
    - Klik **Terapkan** → salin **URL Aplikasi web** (berakhiran `/exec`). Simpan di Notepad.
 6. Uji server: buka **jendela Incognito** (Chrome: **Ctrl+Shift+N**). Tempel URL tadi, tambahkan `?action=info` di belakangnya, lalu buka.
-   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.1.0",...,"siap":true}}`.
+   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.2.0",...,"siap":true}}`.
    > Jangan uji di jendela biasa bila browser login dengan **lebih dari satu akun Google**. Google akan menampilkan
    > "Maaf, saat ini tidak dapat membuka file" walaupun server sebenarnya sudah benar.
 
@@ -123,7 +128,7 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    ```powershell
    git init
    git add .
-   git commit -m "DPU SP JBA v2.1.0"
+   git commit -m "DPU SP JBA v2.2.0"
    git branch -M main
    git remote add origin https://github.com/USERNAME/REPO.git
    git push -u origin main
@@ -173,7 +178,7 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | Kotak **"Alamat server belum diatur"** | `js/config.js` belum diisi | Isi `GAS_URL` (langkah B2), lalu `git add .` → `git commit -m "isi URL"` → `git push` |
 | Halaman Google Drive **"Maaf, saat ini tidak dapat membuka file"** saat membuka URL /exec | Browser login dengan beberapa akun Google, URL salah salin, atau akses bukan "Siapa saja" | Buka di **Incognito** (Ctrl+Shift+N). Salin ulang lewat Kelola deployment → **Salin**. Pastikan akses **Siapa saja** |
 | **"Tidak bisa terhubung ke server Apps Script"** | Akses deployment bukan "Siapa saja", URL salah, atau internet putus | Periksa langkah A5. URL harus berakhiran `/exec` |
-| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.1.0, lalu Kelola deployment → Edit → **Versi baru** |
+| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.2.0, lalu Kelola deployment → Edit → **Versi baru** |
 | Menu **Ucapan & Hari Besar** tidak muncul | Peran Anda tidak punya akses | Super Admin mengatur akses di Pengaturan → Pengguna & Hak Akses |
 | Tombol **Kirim otomatis** tidak bisa dicentang | WhatsApp belum mode Gateway | Pengaturan → Notifikasi → mode **Gateway** + token Fonnte |
 | Riwayat **"Terkirim tanpa kartu"** | Paket Fonnte belum mendukung lampiran gambar | Normal: ucapan teks tetap terkirim. Tingkatkan paket Fonnte bila ingin kartu ikut terkirim |
