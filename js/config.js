@@ -8,5 +8,5 @@
    Setelah diganti: simpan file ini → git add . → git commit -m "isi URL server" → git push
    ============================================================ */
 window.APP_CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbw_Ub8kPiYjRL_HEatEYdGJZRRbQdha0MFjw_gNrd7P-Q5YzjtpB795bH-NcvIGNrQJ/exec'
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzkYBBkR6m4SfIZgZrP4NxSOLvYE-8rKLpW5gY_LdNHWJsfjFNubpoLlM5q8p1Ky7ORxg/exec'
 };
