@@ -197,7 +197,7 @@ function tickClock() {
 const greetingWord = () => { const h = srvParts().hour; return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 19 ? 'Selamat Sore' : 'Selamat Malam'; };
 
 // ════════════════ API (fetch ke Apps Script → Promise) ════════════════
-const CLIENT_VERSION = '2.3.0';   // harus sama dengan APP_VERSION di Kode.gs
+const CLIENT_VERSION = '2.3.1';   // harus sama dengan APP_VERSION di Kode.gs
 /** Nama bawaan aplikasi bila Pengaturan belum diisi. */
 const APP_NAME_DEFAULT = 'DPU SP JBA';
 const PERF = { calls: [] };
@@ -6056,6 +6056,13 @@ function ucIsi(tpl, a, ev) {
     organisasi: kartuSubjudul(), subjudul: String(st.ucapan_subjudul || '').trim() };
   return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m)).replace(/\n[^\n]*· -\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '');
 }
+/** v2.3.1 — tautan kartu di akhir pesan (sama dengan server pesanDenganTautan_). */
+const ucTautanKartu = (tpl) => { const m = String((tpl && tpl.url_kartu) || '').match(/[?&]id=([\w-]{10,})/); return m ? 'https://drive.google.com/file/d/' + m[1] + '/view' : ''; };
+function ucTambahTautan(msg, tpl) {
+  const dasar = String(msg || '').replace(/\n*🎴 Lihat kartu ucapan: \S+\s*$/, '').replace(/\s+$/, '');
+  const link = String(S.settings.ucapan_tautan) !== 'false' ? ucTautanKartu(tpl) : '';
+  return link ? dasar + '\n\n🎴 Lihat kartu ucapan: ' + link : dasar;
+}
 /** Penerima ucapan untuk satu tanggal (logika sama dengan server susunUcapan_). */
 function ucSusun(iso) {
   const opt = {}; ucOptout().forEach((id) => { opt[id] = true; });
@@ -6154,13 +6161,13 @@ function ucPratinjau(key) {
   const e = ucSusun(iso).find((x) => x.key === key); if (!e) return;
   const tpl = e.tpl || {}, contoh = e.penerima[0] || { a: S.db.Anggota[0] || {} };
   const ev = { nama: e.ultah ? 'Ulang Tahun' : e.nama, tanggal: iso, usia: contoh.usia };
-  const msg = ucIsi(tpl.pesan, contoh.a, ev);
+  const msg = ucTambahTautan(ucIsi(tpl.pesan, contoh.a, ev), tpl);
   openModal({ title: (e.ultah ? 'Ulang Tahun' : e.nama) + ' · ' + fmtDate(iso, 'long'), size: 'wide', body: `
     <div class="uc-prev"><div class="uc-prev-card"><canvas id="uc-prev-cv" width="1080" height="1350"></canvas>${tpl.url_kartu ? '' : '<small class="muted">Kartu belum diunggah ke Drive — simpan template sekali agar kartu ikut terkirim.</small>'}</div>
       <div><div class="small muted" style="margin-bottom:6px">Contoh pesan untuk <b>${esc(contoh.a.nama || '-')}</b></div><div class="wa-bubble">${waFmt(msg)}</div>
         <div class="row-between mt-16"><b>Penerima (${e.penerima.length})</b>${tpl.aktif === 'false' ? '<span class="chip chip-warn">Jenis ucapan nonaktif</span>' : ''}</div>
         <div class="uc-pen-list">${e.penerima.map((p) => `<div class="row-between small"><div style="min-width:0"><b class="ellipsis">${esc(p.a.nama)}</b><div class="muted ellipsis">${esc(p.a.jabatan || '-')} · ${esc(p.a.unit || '-')}${p.usia ? ' · ' + p.usia + ' th' : ''}</div>${p.lewat ? `<div class="t-warn">${esc(p.lewat)}</div>` : ''}</div>
-          ${hpValid(p.a.kontak) ? `<a class="btn-icon sm" target="_blank" rel="noopener" href="${waLink(p.a.kontak, ucIsi(tpl.pesan, p.a, Object.assign({}, ev, { usia: p.usia })))}" title="Kirim manual via WhatsApp"><i class="bi bi-whatsapp" style="color:#25D366"></i></a>` : ''}</div>`).join('')}</div></div></div>`,
+          ${hpValid(p.a.kontak) ? `<a class="btn-icon sm" target="_blank" rel="noopener" href="${waLink(p.a.kontak, ucTambahTautan(ucIsi(tpl.pesan, p.a, Object.assign({}, ev, { usia: p.usia })), tpl))}" title="Kirim manual via WhatsApp"><i class="bi bi-whatsapp" style="color:#25D366"></i></a>` : ''}</div>`).join('')}</div></div></div>`,
     foot: `<button class="btn btn-secondary" onclick="ucUnduhKartu('${esc(tpl.jenis || 'umum')}')"><i class="bi bi-download"></i>Unduh Kartu</button><button class="btn btn-primary" onclick="closeModal()">Tutup</button>` });
   renderKartu($('#uc-prev-cv'), ucKartu(tpl)).catch((er) => console.warn(er));
 }
@@ -6360,7 +6367,7 @@ function ucPilihTema(id) {
   ucEdPrev();
 }
 const ucEdPrev = debounce(() => { const cv = $('#uc-ed-cv'); if (cv && UC_ED) renderKartu(cv, UC_ED.k).catch((e) => console.warn(e)); }, 60);
-function ucEdPesan() { const el = $('#uc-ed-msg'); if (el && UC_ED) el.innerHTML = waFmt(ucIsi($('#uc-pesan').value, UC_ED.contoh, UC_ED.ev)); }
+function ucEdPesan() { const el = $('#uc-ed-msg'); if (el && UC_ED) el.innerHTML = waFmt(ucTambahTautan(ucIsi($('#uc-pesan').value, UC_ED.contoh, UC_ED.ev), ucTpl(UC_ED.jenis))); }
 function ucSisip(p) { const ta = $('#uc-pesan'); const s = ta.selectionStart || ta.value.length; ta.value = ta.value.slice(0, s) + p + ta.value.slice(ta.selectionEnd || s); ta.focus(); ta.selectionStart = ta.selectionEnd = s + p.length; ucEdPesan(); }
 async function ucSimpanTemplate() {
   const b = $('#uc-ed-save'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Menyimpan kartu…';
@@ -6391,7 +6398,7 @@ function ucTes(jenis) {
   $('#uc-tes-go').onclick = () => {
     const n = $('#uc-tes-no').value; if (!hpValid(n)) { toast('Nomor tidak valid (08xxxxxxxxxx).', 'warning'); return; }
     const b = $('#uc-tes-go'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Mengirim…';
-    api('tesUcapan', S.token, jenis, n).then((r) => { toast(r.message, r.data && r.data.kartu ? 'success' : 'warning'); closeModal(); }).catch((e) => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i>Kirim'; toast(e.message, 'error'); });
+    api('tesUcapan', S.token, jenis, n).then((r) => { toast(r.message, r.data && (r.data.kartu || r.data.tautan) ? 'success' : 'warning', r.data && r.data.kartu ? 'Terkirim + gambar kartu' : r.data && r.data.tautan ? 'Terkirim + tautan kartu' : ''); closeModal(); }).catch((e) => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i>Kirim'; toast(e.message, 'error'); });
   };
 }
 
@@ -6444,7 +6451,8 @@ const UC_ST_CLS = { Terkirim: 'chip-in', Antri: 'chip-warn', Proses: 'chip-trf',
 const UC_ST_LBL = { Antri: 'Antre', Proses: 'Mengirim…' };
 const ucQ = (id) => ((S.ui.uc.info && S.ui.uc.info.antrian) || []).find((q) => q.id === id);
 /** Keterangan kartu dari jawaban gateway. */
-const ucKartuInfo = (q) => (!q.lampiran ? '' : /tanpa kartu/i.test(q.respon || '') ? '<span class="chip chip-warn" title="Gateway menolak gambar"><i class="bi bi-image"></i>Tanpa kartu</span>'
+const ucKartuInfo = (q) => (!q.lampiran && !/tautan kartu/i.test(q.respon || '') ? ''
+  : /tanpa (kartu|gambar)/i.test(q.respon || '') ? (/tautan kartu disertakan/i.test(q.respon || '') ? '<span class="chip chip-soft" title="Gateway menolak gambar; tautan kartu ada di pesan"><i class="bi bi-link-45deg"></i>Tautan kartu</span>' : '<span class="chip chip-warn" title="Gateway menolak gambar"><i class="bi bi-image"></i>Tanpa kartu</span>')
   : q.status === 'Terkirim' ? '<span class="chip chip-in"><i class="bi bi-image"></i>+ Kartu</span>' : '<i class="bi bi-image t-primary" title="Dengan kartu"></i>');
 function ucRiwayatHtml() {
   const u = S.ui.uc, info = u.info, sup = isSuper();
@@ -6548,13 +6556,14 @@ function ucPengaturan() {
       <label class="field"><span>Jam kirim (WIB)</span><select id="ucs-jam" class="select">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${String(st.ucapan_jam || 7) === String(h) ? 'selected' : ''}>${String(h).padStart(2, '0')}.00</option>`).join('')}</select></label>
       <label class="field"><span>Ukuran batch per menit</span><select id="ucs-batch" class="select">${[10, 20, 50].map((n) => `<option ${String(st.ucapan_batch || 20) === String(n) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="field"><span>Jeda acak antar pesan</span><select id="ucs-jeda" class="select">${[['2-5', '2–5 detik'], ['3-8', '3–8 detik (disarankan)'], ['5-12', '5–12 detik (paling aman)']].map(([v, l]) => `<option value="${v}" ${String(st.ucapan_jeda || '3-8') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field check" style="flex-direction:row;align-items:center;gap:10px;margin-top:22px"><input type="checkbox" id="ucs-kartu" ${String(st.ucapan_kartu) !== 'false' ? 'checked' : ''}> Lampirkan kartu ucapan</label></div>
+      <label class="field check" style="flex-direction:row;align-items:center;gap:10px;margin-top:22px"><input type="checkbox" id="ucs-kartu" ${String(st.ucapan_kartu) !== 'false' ? 'checked' : ''}> Lampirkan gambar kartu ucapan</label></div>
+    <label class="field check mt-8" style="flex-direction:row;align-items:flex-start;gap:10px"><input type="checkbox" id="ucs-tautan" ${String(st.ucapan_tautan) !== 'false' ? 'checked' : ''} style="margin-top:3px"> <span>Sertakan <b>tautan kartu</b> di akhir pesan <span class="small muted">— kartu tetap bisa dibuka penerima walau paket Fonnte belum bisa mengirim gambar</span></span></label>
     <p class="small muted mt-16"><i class="bi bi-shield-check"></i> Pesan dikirim bertahap lewat antrean (pemicu tiap 1 menit) dengan jeda acak agar nomor WhatsApp organisasi aman dari pemblokiran. Token Fonnte tetap tersimpan rahasia di server.</p>
     ${info.pemicu !== undefined ? `<p class="small mt-8">Status pemicu server: <b class="${info.pemicu ? 't-in' : 't-warn'}">${info.pemicu ? 'terpasang' : 'belum terpasang'}</b></p>` : ''}`,
     foot: '<button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" id="ucs-save"><i class="bi bi-check2"></i>Simpan</button>' });
   $('#ucs-save').onclick = () => {
     const b = $('#ucs-save'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Menyimpan…';
-    api('simpanPengaturanUcapan', S.token, { aktif: $('#ucs-on').checked, jam: Number($('#ucs-jam').value), batch: Number($('#ucs-batch').value), jeda: $('#ucs-jeda').value, kartu: $('#ucs-kartu').checked })
+    api('simpanPengaturanUcapan', S.token, { aktif: $('#ucs-on').checked, jam: Number($('#ucs-jam').value), batch: Number($('#ucs-batch').value), jeda: $('#ucs-jeda').value, kartu: $('#ucs-kartu').checked, tautan: $('#ucs-tautan').checked })
       .then((r) => { S.settings = r.data.settings; S.meta.version = r.data.version; saveSnapshot(); if (S.ui.uc.info) S.ui.uc.info.pemicu = r.data.pemicu; closeModal(); toast(r.message, 'success'); renderUcapan(); })
       .catch((e) => { b.disabled = false; b.innerHTML = '<i class="bi bi-check2"></i>Simpan'; toast(e.message, 'error'); });
   };

@@ -1,4 +1,4 @@
-# PANDUAN INSTALASI — DPU SP JBA v2.3.0
+# PANDUAN INSTALASI — DPU SP JBA v2.3.1
 ### Server di Google Apps Script (API) + Tampilan di GitHub Pages · untuk Windows
 
 Ada **dua bagian** yang dipasang di dua tempat berbeda:
@@ -8,11 +8,18 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | **Server (API)** | `Kode.gs` (berkas terpisah, **tidak** ada di ZIP) | script.google.com |
 | **Tampilan** | isi ZIP `dpuspjba-web.zip` | GitHub Pages |
 
-**Sudah memakai v2.1.0 atau v2.2.0?** Langsung ke bagian **0**. Masih v2.0.0? Kerjakan bagian **0** lalu **0B**. Pemasangan baru: bagian **A → B → C**, lalu **0B**.
+**Sudah memakai v2.1.0 – v2.3.0?** Langsung ke bagian **0**. Masih v2.0.0? Kerjakan bagian **0** lalu **0B**. Pemasangan baru: bagian **A → B → C**, lalu **0B**.
 
 ---
 
-## 0. Memperbarui ke v2.3.0 (± 5 menit)
+## 0. Memperbarui ke v2.3.1 (± 5 menit)
+
+### Yang baru di v2.3.1
+- **Tautan kartu ucapan di setiap pesan.** Di akhir kata-kata ucapan kini ada baris **🎴 Lihat kartu ucapan: https://drive.google.com/…**. Penerima bisa membuka kartunya walau paket Fonnte belum bisa mengirim gambar.
+  - Bisa dimatikan di **Ucapan → Pengaturan → "Sertakan tautan kartu"**.
+- **Pengiriman lebih cepat bila gateway menolak gambar.** Setelah gambar ditolak, selama 12 jam pesan langsung dikirim sebagai teks + tautan kartu. Tombol **Kirim Tes** selalu mencoba gambar lagi; begitu paket Fonnte mendukung, gambar kembali terkirim.
+- **Kirim Ulang dari Riwayat memakai kartu terbaru.**
+- **Kartu lama tidak dihapus dari Google Drive**, jadi tautan di pesan yang sudah terkirim tetap bisa dibuka.
 
 ### Yang baru di v2.3.0
 1. **Kartu ucapan ikut terkirim bersama kata-kata.**
@@ -31,23 +38,24 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 
 ### Langkah 1 — Server (Apps Script)
 1. Buka proyek Apps Script yang URL-nya ada di `js/config.js`. Cek di **Terapkan → Kelola deployment**.
-2. Buka **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.3.0** → **Ctrl+S**.
-3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.3.0` → **Terapkan**. URL `/exec` tetap sama.
+2. Buka **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.3.1** → **Ctrl+S**.
+3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.3.1` → **Terapkan**. URL `/exec` tetap sama.
 
 ### Langkah 2 — Tampilan (GitHub Pages)
 1. Ekstrak `dpuspjba-web.zip`. **Salin semua isinya** ke folder tampilan Anda (folder yang berisi `index.html`), lalu pilih **Ganti file di tujuan**.
 2. Buka PowerShell di folder itu dan jalankan satu per satu:
    ```powershell
    git add .
-   git commit -m "DPU SP JBA v2.3.0"
+   git commit -m "DPU SP JBA v2.3.1"
    git push
    ```
+   Gunakan folder repository yang berisi folder tersembunyi `.git` (hasil `git clone`). Bila muncul *not a git repository*, folder itu bukan folder repository.
 3. Tunggu 1–2 menit → buka situs → **Ctrl+Shift+R**.
 
 ### Langkah 3 — Setelah pembaruan (Super Admin)
 1. Buka **Ucapan & Hari Besar → Template & Kartu**. Pastikan muncul **"Semua 15 kartu siap dikirim"**.
 2. Isi **Nama unit** dan **Sub judul** di kotak **"Identitas pada kartu & kata-kata ucapan"** → **Simpan & Perbarui Semua Template**.
-3. Coba **Kirim Tes** di salah satu kartu ke nomor Anda sendiri. Gambar kartu harus masuk bersama kata-katanya.
+3. Coba **Kirim Tes** di salah satu kartu ke nomor Anda sendiri. Pesan berisi kata-kata ucapan + **tautan kartu**; bila paket Fonnte mendukung, gambar kartu juga ikut masuk.
 4. Ucapan yang tadi terkirim tanpa kartu: buka **Riwayat Kirim**, centang, lalu klik **Kirim Ulang**.
 
 > 💡 **Kirim gambar lewat Fonnte butuh paket Super, Advanced, atau Ultra** (lihat dokumentasi Fonnte). Bila paket Anda belum mendukung, ucapan tetap terkirim sebagai teks dan Riwayat mencatat "Tanpa kartu".
@@ -92,12 +100,12 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    - Buka **Log eksekusi** di bawah. Pastikan ada `✅ Setup selesai.`
    - **Catat akun awal** yang tampil (contoh `superadmin / Ab3dEf9h (Super Admin)`). Akun ini hanya ditampilkan **sekali**.
 5. Klik **Terapkan** (kanan atas) → **Deployment baru** → ikon ⚙️ di "Pilih jenis" → **Aplikasi web**:
-   - Deskripsi: `DPU SP JBA API v2.3.0`
+   - Deskripsi: `DPU SP JBA API v2.3.1`
    - **Jalankan sebagai: Saya**
    - **Yang memiliki akses: Siapa saja** ← wajib. Bila dipilih "Siapa saja yang memiliki Akun Google", tampilan tidak bisa terhubung.
    - Klik **Terapkan** → salin **URL Aplikasi web** (berakhiran `/exec`). Simpan di Notepad.
 6. Uji server: buka **jendela Incognito** (Chrome: **Ctrl+Shift+N**). Tempel URL tadi, tambahkan `?action=info` di belakangnya, lalu buka.
-   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.3.0",...,"siap":true}}`.
+   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.3.1",...,"siap":true}}`.
    > Jangan uji di jendela biasa bila browser login dengan **lebih dari satu akun Google**. Google akan menampilkan
    > "Maaf, saat ini tidak dapat membuka file" walaupun server sebenarnya sudah benar.
 
@@ -137,7 +145,7 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    ```powershell
    git init
    git add .
-   git commit -m "DPU SP JBA v2.3.0"
+   git commit -m "DPU SP JBA v2.3.1"
    git branch -M main
    git remote add origin https://github.com/USERNAME/REPO.git
    git push -u origin main
@@ -187,10 +195,10 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | Kotak **"Alamat server belum diatur"** | `js/config.js` belum diisi | Isi `GAS_URL` (langkah B2), lalu `git add .` → `git commit -m "isi URL"` → `git push` |
 | Halaman Google Drive **"Maaf, saat ini tidak dapat membuka file"** saat membuka URL /exec | Browser login dengan beberapa akun Google, URL salah salin, atau akses bukan "Siapa saja" | Buka di **Incognito** (Ctrl+Shift+N). Salin ulang lewat Kelola deployment → **Salin**. Pastikan akses **Siapa saja** |
 | **"Tidak bisa terhubung ke server Apps Script"** | Akses deployment bukan "Siapa saja", URL salah, atau internet putus | Periksa langkah A5. URL harus berakhiran `/exec` |
-| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.3.0, lalu Kelola deployment → Edit → **Versi baru** |
+| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.3.1, lalu Kelola deployment → Edit → **Versi baru** |
 | Menu **Ucapan & Hari Besar** tidak muncul | Peran Anda tidak punya akses | Super Admin mengatur akses di Pengaturan → Pengguna & Hak Akses |
 | Tombol **Kirim otomatis** tidak bisa dicentang | WhatsApp belum mode Gateway | Pengaturan → Notifikasi → mode **Gateway** + token Fonnte |
-| Riwayat **"Tanpa kartu"** | Gateway menolak gambar (paket Fonnte belum Super/Advanced/Ultra) | Ucapan teks tetap terkirim. Tingkatkan paket Fonnte, lalu centang riwayatnya → **Kirim Ulang** |
+| Riwayat **"Tautan kartu"** / **"Tanpa kartu"** | Gateway menolak gambar (paket Fonnte belum Super/Advanced/Ultra) | Ucapan tetap terkirim dengan tautan kartu. Bila ingin gambarnya langsung tampil, tingkatkan paket Fonnte → **Kirim Tes** → centang riwayatnya → **Kirim Ulang** |
 | Riwayat **"Gagal"** | Nomor salah, tidak terdaftar di WA, atau gateway sedang putus | Periksa nomor anggota → pilih baris di Riwayat Kirim → **Kirim Ulang** |
 | GitHub Pages **404** | `index.html` tidak berada di akar repository | Di GitHub, `index.html` harus terlihat langsung. Bila terlihat di dalam sebuah folder, push ulang dari folder yang benar |
 | Masih tampil versi lama | Cache browser | **Ctrl+Shift+R** atau buka di jendela Incognito |
