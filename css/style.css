@@ -1,4 +1,4 @@
-/* DPU SP JBA v2.2.0 — tampilan (GitHub Pages) */
+/* DPU SP JBA v2.3.0 — tampilan (GitHub Pages) */
 /* ============================================================
    DPU SP JBA — Stylesheet · Sistem desain "Ledger & Union Modern"
    Token mengikuti DESIGN.md; warna utama/aksen diisi dari Pengaturan.
@@ -1408,7 +1408,23 @@ body.vt-mode > :not(.vt-page) { display: none !important; }
 .uc-tpl-info .switch { margin-top: 1px; }
 .uc-tpl-st { margin-top: auto; font-size: 11.5px; display: flex; align-items: center; gap: 6px; color: var(--muted); min-height: 18px; }
 .uc-tpl-st.ok { color: var(--in); } .uc-tpl-st.wait { color: var(--warn); } .uc-tpl-st .spin { width: 11px; height: 11px; border-width: 2px; }
-.uc-idk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.uc-idk { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.uc-idk-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.uc-idk-prev { flex: 1 1 260px; max-width: 420px; display: grid; gap: 6px; }
+.uc-idk-prev .wa-bubble { max-height: none; }
+/* v2.3 · Riwayat Kirim: baris bisa diklik & dipilih */
+.uc-rtbl tr.uc-rw { cursor: pointer; transition: background-color .12s; }
+.uc-rtbl tr.uc-rw:hover { background: var(--surface-2); }
+.uc-rtbl tr.uc-rw.sel { background: var(--primary-softer); }
+.uc-rtbl tr.uc-rw:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.uc-resp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 360px; }
+.uc-rdet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 20px; align-items: start; }
+.uc-rresp { font-size: 13px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); overflow-wrap: anywhere; }
+.uc-rdet-card { display: grid; gap: 8px; justify-items: center; }
+.uc-rdet-card img { width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(15,23,42,.18); }
+.uc-rdet-card .uc-rimg-err { display: none; } .uc-rdet-card.err img { display: none; } .uc-rdet-card.err .uc-rimg-err { display: flex; }
+.uc-rdet-card .empty { width: 100%; aspect-ratio: 4 / 5; justify-content: center; border-radius: 12px; background: var(--surface-2); }
+@media (max-width: 760px) { .uc-rdet { grid-template-columns: 1fr; } .uc-rdet-card { max-width: 260px; margin: 0 auto; } }
 .uc-idk .field { margin: 0; }
 .uc-sync { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .uc-sync .bar { flex: 1 1 160px; height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
@@ -1549,3 +1565,6 @@ html[data-skin="aurora"]:not([data-theme="dark"]) { --canvas: #F5F7FF; --canvas-
 @keyframes winFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes winShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px) rotate(-.4deg); } 75% { transform: translateX(2px) rotate(.4deg); } }
 @media (prefers-reduced-motion: reduce) { .win-card.roll { animation: none; } .win-card.show { animation: none; } }
+/* v2.3 · Anggota: baris terpilih */
+#agt-table tr.sel > td { background: var(--primary-softer); }
+#agt-table .gat-chk { display: inline-flex; align-items: center; }

@@ -111,7 +111,7 @@ const S = {
     dr: {}, permRole: 'Anggota', userQ: '', userRole: '',
     trx: { q: '', dompet: '', kat: '', jenis: '', page: 1, size: 10 },
     inv: { q: '', kat: '', kondisi: '', tahun: '', view: 'grid' },
-    agt: { q: '', status: '', page: 1 },
+    agt: { q: '', status: '', page: 1, sel: {} },
     tag: { tab: 'semua', q: '', cal: null },
     gat: { tab: 'semua', q: '', acara: '', sel: {}, view: 'iuran', kAcara: '' },
     uc: { tab: 'jadwal', tahun: null, agama: '', q: '', info: null, infoAt: 0, rStatus: '', rSel: {}, pFilter: '' },
@@ -197,7 +197,7 @@ function tickClock() {
 const greetingWord = () => { const h = srvParts().hour; return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 19 ? 'Selamat Sore' : 'Selamat Malam'; };
 
 // ════════════════ API (fetch ke Apps Script → Promise) ════════════════
-const CLIENT_VERSION = '2.2.0';   // harus sama dengan APP_VERSION di Kode.gs
+const CLIENT_VERSION = '2.3.0';   // harus sama dengan APP_VERSION di Kode.gs
 /** Nama bawaan aplikasi bila Pengaturan belum diisi. */
 const APP_NAME_DEFAULT = 'DPU SP JBA';
 const PERF = { calls: [] };
@@ -2235,21 +2235,66 @@ function renderAnggota() {
   renderAgtTable();
 }
 const agtFilter = debounce((k, v) => { S.ui.agt[k] = v; S.ui.agt.page = 1; renderAgtTable(); }, 150);
-function renderAgtTable() {
-  const u = S.ui.agt, q = (u.q || '').toLowerCase(), size = 25;
-  const list = S.db.Anggota.filter((a) => (!u.status || a.status === u.status) && (!u.unit || a.unit === u.unit) && inDr('anggota', a.tanggal_gabung) && (!q || (a.nama + ' ' + a.no_anggota + ' ' + a.unit + ' ' + a.kontak + ' ' + (a.jabatan || '') + ' ' + (a.agama || '')).toLowerCase().indexOf(q) >= 0))
+function agtFiltered() {
+  const u = S.ui.agt, q = (u.q || '').toLowerCase();
+  return S.db.Anggota.filter((a) => (!u.status || a.status === u.status) && (!u.unit || a.unit === u.unit) && inDr('anggota', a.tanggal_gabung) && (!q || (a.nama + ' ' + a.no_anggota + ' ' + a.unit + ' ' + a.kontak + ' ' + (a.jabatan || '') + ' ' + (a.agama || '')).toLowerCase().indexOf(q) >= 0))
     .sort((a, b) => String(a.nama).localeCompare(b.nama));
+}
+function renderAgtTable() {
+  const u = S.ui.agt, size = 25, w = canW('anggota', 2);
+  if (!u.sel) u.sel = {};
+  Object.keys(u.sel).forEach((id) => { if (!findLocal('Anggota', id)) delete u.sel[id]; });
+  const list = agtFiltered();
   const start = (u.page - 1) * size, rows = list.slice(start, start + size);
-  $('#agt-table').innerHTML = list.length ? `<div class="table-wrap"><table class="tbl cards"><thead><tr><th>Anggota</th><th>No. anggota</th><th>Unit</th><th>Kontak</th><th>Lahir · Agama</th><th>Bergabung</th><th>Status</th><th></th></tr></thead><tbody>
-    ${rows.map((a) => `<tr><td data-m="full"><div class="row" style="gap:10px"><span class="avatar" style="background:var(--primary-soft);color:var(--primary)">${initials(a.nama)}</span><div style="min-width:0"><b>${esc(a.nama)}</b>${a.jabatan ? `<div class="t-sub">${esc(a.jabatan)}</div>` : '<div class="t-sub t-warn"><i class="bi bi-exclamation-circle"></i> Data belum lengkap</div>'}</div></div></td>
+  $('#agt-table').innerHTML = list.length ? `${w ? `<div class="gat-tools"><label class="check gat-all"><input type="checkbox" id="agt-all" onchange="agtSelAll(this.checked)" ${list.every((a) => u.sel[a.id]) ? 'checked' : ''}> <span>Pilih semua <span class="muted">(${list.length} sesuai filter)</span></span></label></div><div id="agt-bulk"></div>` : ''}
+    <div class="table-wrap"><table class="tbl cards"><thead><tr><th>Anggota</th><th>No. anggota</th><th>Unit</th><th>Kontak</th><th>Lahir · Agama</th><th>Bergabung</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.map((a) => `<tr class="${u.sel[a.id] ? 'sel' : ''}" data-aid="${a.id}"><td data-m="full"><div class="row" style="gap:10px">${w ? `<label class="gat-chk" title="Pilih anggota ini"><input type="checkbox" ${u.sel[a.id] ? 'checked' : ''} onchange="agtToggle('${a.id}', this.checked)" aria-label="Pilih ${esc(a.nama)}"></label>` : ''}<span class="avatar" style="background:var(--primary-soft);color:var(--primary)">${initials(a.nama)}</span><div style="min-width:0"><b>${esc(a.nama)}</b>${a.jabatan ? `<div class="t-sub">${esc(a.jabatan)}</div>` : '<div class="t-sub t-warn"><i class="bi bi-exclamation-circle"></i> Data belum lengkap</div>'}</div></div></td>
       <td class="mono small">${esc(a.no_anggota || '-')}</td><td data-m="hide">${esc(a.unit || '-')}</td><td data-m="hide" class="mono small">${esc(a.kontak || '-')}${a.email ? `<div class="t-sub">${esc(a.email)}</div>` : ''}</td>
       <td data-m="hide" class="small">${a.tanggal_lahir ? `<span class="mono">${fmtDate(a.tanggal_lahir)}</span>` : '-'}${a.agama ? `<div><span class="dot" style="background:${AGAMA_WARNA[normAgama(a.agama)] || 'var(--muted)'}"></span> ${esc(a.agama)}</div>` : ''}</td>
       <td data-m="hide" class="mono small">${fmtDate(a.tanggal_gabung)}</td><td><span class="chip ${a.status === 'Aktif' ? 'chip-in' : 'chip-mute'}">${esc(a.status || '-')}</span></td>
-      <td data-m="hide"><div class="row-actions">${a.kontak ? `<a class="btn-icon sm" href="${waLink(a.kontak, 'Halo ' + a.nama + ',')}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp" style="color:#25D366"></i></a>` : ''}${canW() ? `<button class="btn-icon sm" onclick="openAnggotaForm('${a.id}')" aria-label="Ubah"><i class="bi bi-pencil"></i></button>` : ''}</div></td></tr>`).join('')}
+      <td data-m="hide"><div class="row-actions">${a.kontak ? `<a class="btn-icon sm" href="${waLink(a.kontak, 'Halo ' + a.nama + ',')}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp" style="color:#25D366"></i></a>` : ''}${canW() ? `<button class="btn-icon sm" onclick="openAnggotaForm('${a.id}')" aria-label="Ubah"><i class="bi bi-pencil"></i></button>` : ''}${w ? `<button class="btn-icon sm t-out" onclick="agtHapus(['${a.id}'])" aria-label="Hapus ${esc(a.nama)}" title="Hapus anggota"><i class="bi bi-trash3"></i></button>` : ''}</div></td></tr>`).join('')}
     </tbody></table></div><div class="tbl-foot"><span>Menampilkan ${start + 1}–${start + rows.length} dari ${list.length} anggota</span>${pager(list.length, u.page, size, 'agtPage')}</div>`
     : emptyState('bi-people', 'Belum ada anggota', '', canW() ? '<button class="btn btn-primary btn-sm" onclick="openAnggotaForm()">Tambah anggota</button>' : '');
+  agtBulk();
 }
 function agtPage(p) { S.ui.agt.page = p; renderAgtTable(); }
+// ── v2.3: pilih anggota + hapus (satu / banyak sekaligus)
+function agtToggle(id, on) {
+  if (on) S.ui.agt.sel[id] = true; else delete S.ui.agt.sel[id];
+  const tr = document.querySelector(`#agt-table tr[data-aid="${id}"]`);
+  if (tr) { tr.classList.toggle('sel', !!on); const c = tr.querySelector('.gat-chk input'); if (c) c.checked = !!on; }
+  agtBulk();
+}
+function agtSelAll(on) {
+  agtFiltered().forEach((a) => { if (on) S.ui.agt.sel[a.id] = true; else delete S.ui.agt.sel[a.id]; });
+  $$('#agt-table tr[data-aid]').forEach((tr) => { tr.classList.toggle('sel', !!on); const c = tr.querySelector('.gat-chk input'); if (c) c.checked = !!on; });
+  agtBulk();
+}
+function agtBulk() {
+  const el = $('#agt-bulk'); if (!el) return;
+  const ids = Object.keys(S.ui.agt.sel).filter((id) => S.ui.agt.sel[id]), all = $('#agt-all'), list = agtFiltered();
+  if (all) { all.checked = list.length > 0 && list.every((a) => S.ui.agt.sel[a.id]); all.indeterminate = ids.length > 0 && !all.checked; }
+  if (!ids.length) { el.innerHTML = ''; el.className = ''; return; }
+  el.className = 'gat-bulk';
+  el.innerHTML = `<div class="gat-bulk-info"><b>${ids.length} anggota dipilih</b></div>
+    <div class="gat-bulk-act"><button class="btn btn-sm b-out" onclick="agtHapus()"><i class="bi bi-trash3"></i>Hapus (${ids.length})</button>
+      <button class="btn btn-sm b-x" onclick="agtSelAll(false)" title="Batalkan pilihan" aria-label="Batalkan pilihan"><i class="bi bi-x-lg"></i></button></div>`;
+}
+function agtHapus(idsArg) {
+  if (!canW('anggota', 2)) return;
+  const ids = (idsArg || Object.keys(S.ui.agt.sel).filter((id) => S.ui.agt.sel[id])).filter((id) => findLocal('Anggota', id));
+  if (!ids.length) return;
+  const sel = ids.map((id) => findLocal('Anggota', id)), n = sel.length;
+  confirmDlg(`Hapus ${n === 1 ? sel[0].nama : n + ' anggota terpilih'} dari data anggota? Tindakan tercatat di log aktivitas.`,
+    { ok: 'Hapus ' + (n === 1 ? 'Anggota' : n + ' Anggota'), danger: true, title: 'Hapus Anggota',
+      extra: n > 1 ? `<div class="budget-card mt-8"><span class="small muted">${sel.slice(0, 8).map((a) => esc(a.nama)).join(', ')}${n > 8 ? ' dan ' + (n - 8) + ' lainnya' : ''}</span></div>` : '' }).then((yes) => {
+    if (!yes) return;
+    const backup = sel.map(clone);
+    ids.forEach((id) => { removeLocal('Anggota', id); delete S.ui.agt.sel[id]; }); afterLocalChange('Anggota');
+    enqueue(() => api('hapusAnggotaMassal', S.token, ids.map((id) => resolveIds({ id }).id)).then((res) => { S.meta.version = res.data.version; toast(res.message, 'success'); })
+      .catch((e) => { backup.forEach((a) => upsertLocal('Anggota', a)); afterLocalChange('Anggota'); toast(e.message, 'error', 'Gagal menghapus'); }));
+  });
+}
 function openAnggotaForm(id) {
   if (!canW('anggota')) return;
   const rec = id ? clone(findLocal('Anggota', id)) : { status: 'Aktif', tanggal_gabung: todayStr() };
@@ -5989,7 +6034,7 @@ const KARTU_TEMA = {
   putih: { nama: 'Putih Elegan', w1: '#FFFFFF', w2: '#EEF1F7', aksen: '', teks: '#141B2B', motif: 'garis', pola: 'none' }
 };
 const UC_PLACEHOLDER = [['{nama}', 'Nama lengkap'], ['{nama_depan}', 'Nama depan'], ['{jabatan}', 'Jabatan'], ['{unit}', 'Unit'], ['{hari_raya}', 'Nama hari besar'],
-  ['{tanggal}', 'Tanggal'], ['{usia}', 'Usia (ulang tahun)'], ['{organisasi}', 'Nama aplikasi/organisasi'], ['{subjudul}', 'Subjudul organisasi']];
+  ['{tanggal}', 'Tanggal'], ['{usia}', 'Usia (ulang tahun)'], ['{organisasi}', 'Nama unit (diatur di "Identitas pada kartu & kata-kata")'], ['{subjudul}', 'Sub judul (diatur di "Identitas pada kartu & kata-kata")']];
 
 const ucTpl = (jenis) => S.db.TemplateUcapan.find((t) => t.jenis === jenis) || S.db.TemplateUcapan.find((t) => t.jenis === 'umum') || null;
 const ucKartu = (t) => { try { return Object.assign({ logo: true }, JSON.parse((t && t.kartu) || '{}')); } catch (e) { return { logo: true }; } };
@@ -6008,8 +6053,8 @@ function ucIsi(tpl, a, ev) {
   const st = S.settings;
   const v = { nama: a.nama || 'Bapak/Ibu', nama_depan: String(a.nama || '').split(/\s+/)[0] || 'Bapak/Ibu', jabatan: a.jabatan || '-', unit: a.unit || '-', hari_raya: ev.nama || '',
     tanggal: fmtDate(ev.tanggal, 'long'), usia: ev.usia === undefined || ev.usia === null ? '' : String(ev.usia), tahun: String(ev.tanggal || todayStr()).slice(0, 4),
-    organisasi: st.nama_aplikasi || APP_NAME_DEFAULT, subjudul: st.subjudul || '' };
-  return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m)).replace(/\n[^\n]*· -\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+    organisasi: kartuSubjudul(), subjudul: String(st.ucapan_subjudul || '').trim() };
+  return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m)).replace(/\n[^\n]*· -\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '');
 }
 /** Penerima ucapan untuk satu tanggal (logika sama dengan server susunUcapan_). */
 function ucSusun(iso) {
@@ -6074,6 +6119,7 @@ function renderUcapan() {
   <div class="tabs mt-24">${tabs.map(([k, l, i]) => `<button class="${u.tab === k ? 'on' : ''}" onclick="S.ui.uc.tab='${k}';renderUcapan()"><i class="bi ${i}"></i>${l}</button>`).join('')}</div>
   <div id="uc-body">${u.tab === 'hari' ? ucHariHtml() : u.tab === 'template' ? ucTemplateHtml() : u.tab === 'penerima' ? ucPenerimaHtml() : u.tab === 'riwayat' ? ucRiwayatHtml() : ucJadwalHtml(jadwal60)}</div>`;
   if (u.tab === 'template') ucGambarThumbs();
+  if (u.tab === 'riwayat') ucRBulk();
   if (isSuper() && !UC_SYNC.run && !UC_SYNC.err && !UC_SYNC.timer && S.db.TemplateUcapan.some(ucPerluUnggah)) UC_SYNC.timer = setTimeout(() => { UC_SYNC.timer = 0; if (S.current === 'ucapan') ucSinkronKartu(false); }, 900);
 }
 
@@ -6177,10 +6223,14 @@ function ucTemplateHtml() {
   const list = S.db.TemplateUcapan.slice().sort((a, b) => (a.jenis === 'ultah' ? -1 : b.jenis === 'ultah' ? 1 : 0));
   if (!list.length) return emptyState('bi-hourglass', 'Menyiapkan template…', '');
   const sup = isSuper(), perlu = list.filter(ucPerluUnggah).length;
-  return `${sup ? `<div class="card card-pad" style="margin-bottom:16px"><div class="card-head" style="margin-bottom:12px"><div><h3><i class="bi bi-type t-primary"></i> Teks pada semua kartu</h3><p>Sub judul tampil di bawah logo dan di bagian bawah kartu (setelah "Keluarga Besar").</p></div><span class="chip chip-soft">SUPER ADMIN</span></div>
-    <div class="uc-idk"><label class="field"><span>Sub judul (nama unit)</span><input id="uc-idk-sub" class="input" maxlength="40" value="${esc(kartuSubjudul())}" placeholder="${KARTU_SUBJUDUL_DEF}"></label>
-      <label class="field"><span>Tulisan di bawah sub judul</span><input id="uc-idk-pg" class="input" maxlength="40" value="${esc(kartuPengantar())}" placeholder="${KARTU_PENGANTAR_DEF} (kosongkan bila tidak perlu)"></label>
-      <button class="btn btn-primary" id="uc-idk-save" onclick="ucSimpanIdentitasKartu()"><i class="bi bi-check2"></i>Simpan & Perbarui Kartu</button></div></div>` : ''}
+  const contoh = ucIsi('Salam hangat,\n*{organisasi}*\n{subjudul}', {}, {});
+  return `${sup ? `<div class="card card-pad" style="margin-bottom:16px"><div class="card-head" style="margin-bottom:12px"><div><h3><i class="bi bi-type t-primary"></i> Identitas pada kartu & kata-kata ucapan</h3><p>Berlaku untuk <b>semua</b> template: nama unit tampil di kartu (di bawah logo & setelah "Keluarga Besar") dan di kata-kata ucapan; sub judul tampil di bawah nama unit pada kata-kata ucapan.</p></div><span class="chip chip-soft">SUPER ADMIN</span></div>
+    <div class="uc-idk"><label class="field"><span>Nama unit</span><input id="uc-idk-sub" class="input" maxlength="40" value="${esc(kartuSubjudul())}" placeholder="${KARTU_SUBJUDUL_DEF}" oninput="ucIdkPrev()"></label>
+      <label class="field"><span>Sub judul <small class="muted">(opsional)</small></span><input id="uc-idk-sj" class="input" maxlength="80" value="${esc(S.settings.ucapan_subjudul || '')}" placeholder="mis. Serikat Pekerja Bank BNI · Jakarta Barat" oninput="ucIdkPrev()"></label>
+      <label class="field"><span>Tulisan di bawah nama unit (kartu)</span><input id="uc-idk-pg" class="input" maxlength="40" value="${esc(kartuPengantar())}" placeholder="${KARTU_PENGANTAR_DEF} (kosongkan bila tidak perlu)"></label></div>
+    <div class="uc-idk-foot"><div class="uc-idk-prev"><span class="small muted">Contoh penutup kata-kata ucapan:</span><div class="wa-bubble" id="uc-idk-prev">${waFmt(contoh)}</div></div>
+      <div class="stack" style="gap:8px;align-items:flex-end"><label class="check small"><input type="checkbox" id="uc-idk-ganti" checked> Ganti juga tulisan nama lama yang diketik langsung di template</label>
+      <button class="btn btn-primary" id="uc-idk-save" onclick="ucSimpanIdentitasKartu()"><i class="bi bi-check2"></i>Simpan & Perbarui Semua Template</button></div></div></div>` : ''}
   <div id="uc-sync">${ucSyncHtml(perlu, list.length)}</div>
   <p class="small muted" style="margin:0 0 14px">Setiap jenis ucapan punya <b>pesan WhatsApp</b> dan <b>kartu ucapan</b> sendiri. ${sup ? 'Klik kartu untuk mengubah teks, warna, dan tema. Kartu otomatis diunggah ke Google Drive agar ikut terkirim di WhatsApp.' : 'Hanya Super Admin yang dapat mengubah template.'}</p>
   <div class="uc-grid">${list.map((t) => { const k = ucKartu(t), on = String(t.aktif) !== 'false'; return `<div class="uc-tpl card ${on ? '' : 'off'}">
@@ -6238,16 +6288,22 @@ async function ucSinkronKartu(manual, semua) {
   if (ok) toast(ok + ' kartu ucapan terunggah ke Google Drive dan siap dikirim.', 'success');
   if (gagal) toast(gagal, 'error', 'Kartu gagal diunggah');
 }
+function ucIdkPrev() {
+  const el = $('#uc-idk-prev'); if (!el) return;
+  const unit = $('#uc-idk-sub').value.trim() || KARTU_SUBJUDUL_DEF, sj = $('#uc-idk-sj').value.trim();
+  el.innerHTML = waFmt('Salam hangat,\n*' + unit + '*' + (sj ? '\n' + sj : ''));
+}
 async function ucSimpanIdentitasKartu() {
-  const sub = $('#uc-idk-sub').value.trim(), pg = $('#uc-idk-pg').value.trim();
-  if (!sub) { toast('Sub judul wajib diisi.', 'warning'); $('#uc-idk-sub').focus(); return; }
+  const sub = $('#uc-idk-sub').value.trim(), sj = $('#uc-idk-sj').value.trim(), pg = $('#uc-idk-pg').value.trim();
+  if (!sub) { toast('Nama unit wajib diisi.', 'warning'); $('#uc-idk-sub').focus(); return; }
   const b = $('#uc-idk-save'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Menyimpan…';
   try {
-    const res = await api('savePengaturan', S.token, { kartu_subjudul: sub, kartu_pengantar: pg });
-    Object.assign(S.settings, { kartu_subjudul: sub, kartu_pengantar: pg }); if (res.data && res.data.version) S.meta.version = res.data.version;
-    saveSnapshot(); toast('Teks kartu disimpan. Semua kartu diperbarui…', 'success');
+    const res = await api('simpanIdentitasUcapan', S.token, { unit: sub, subjudul: sj, pengantar: pg, ganti: $('#uc-idk-ganti').checked });
+    Object.assign(S.settings, { kartu_subjudul: res.data.settings.kartu_subjudul, ucapan_subjudul: res.data.settings.ucapan_subjudul, kartu_pengantar: res.data.settings.kartu_pengantar });
+    if (Array.isArray(res.data.templates)) S.db.TemplateUcapan = res.data.templates;
+    S.meta.version = res.data.version; saveSnapshot(); toast(res.message, 'success');
     renderUcapan(); ucSinkronKartu(true);
-  } catch (e) { b.disabled = false; b.innerHTML = '<i class="bi bi-check2"></i>Simpan & Perbarui Kartu'; toast(e.message, 'error'); }
+  } catch (e) { b.disabled = false; b.innerHTML = '<i class="bi bi-check2"></i>Simpan & Perbarui Semua Template'; toast(e.message, 'error'); }
 }
 async function ucGambarThumbs() {
   for (const cv of $$('canvas[data-uc-thumb]')) {
@@ -6280,7 +6336,7 @@ function ucEditTemplate(jenis) {
           <label class="field"><span>Judul</span><input class="input" maxlength="60" value="${esc(k.judul || '')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.judul=this.value;ucEdPrev()"></label></div>
         <label class="field full"><span>Kutipan / doa pada kartu</span><textarea class="textarea" rows="2" maxlength="180" ${sup ? '' : 'disabled'} oninput="UC_ED.k.isi=this.value;ucEdPrev()">${esc(k.isi || '')}</textarea></label>
         <div class="grid g-2" style="gap:10px">
-          <label class="field"><span>Teks penutup</span><input class="input" maxlength="40" value="${esc(k.penutup || 'Keluarga Besar')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.penutup=this.value;ucEdPrev()"><small class="field-hint">Diikuti sub judul "${esc(kartuSubjudul())}"</small></label>
+          <label class="field"><span>Teks penutup</span><input class="input" maxlength="40" value="${esc(k.penutup || 'Keluarga Besar')}" ${sup ? '' : 'disabled'} oninput="UC_ED.k.penutup=this.value;ucEdPrev()"><small class="field-hint">Diikuti nama unit "${esc(kartuSubjudul())}"</small></label>
           <label class="field check" style="flex-direction:row;align-items:center;margin-top:22px"><input type="checkbox" ${k.logo !== false ? 'checked' : ''} ${sup ? '' : 'disabled'} onchange="UC_ED.k.logo=this.checked;ucEdPrev()"> Tampilkan logo</label></div>
         <label class="field full"><span>Pesan WhatsApp</span><textarea id="uc-pesan" class="textarea mono" rows="9" maxlength="3000" ${sup ? '' : 'disabled'} oninput="ucEdPesan()">${esc(t.pesan || '')}</textarea>
           <small class="field-hint">Klik untuk menyisipkan: ${UC_PLACEHOLDER.map(([p, l]) => `<button type="button" class="chip chip-soft" ${sup ? '' : 'disabled'} title="${esc(l)}" onclick="ucSisip('${p}')">${p}</button>`).join(' ')} · *tebal* · _miring_</small></label>
@@ -6335,7 +6391,7 @@ function ucTes(jenis) {
   $('#uc-tes-go').onclick = () => {
     const n = $('#uc-tes-no').value; if (!hpValid(n)) { toast('Nomor tidak valid (08xxxxxxxxxx).', 'warning'); return; }
     const b = $('#uc-tes-go'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Mengirim…';
-    api('tesUcapan', S.token, jenis, n).then((r) => { toast(r.message, 'success'); closeModal(); }).catch((e) => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i>Kirim'; toast(e.message, 'error'); });
+    api('tesUcapan', S.token, jenis, n).then((r) => { toast(r.message, r.data && r.data.kartu ? 'success' : 'warning'); closeModal(); }).catch((e) => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i>Kirim'; toast(e.message, 'error'); });
   };
 }
 
@@ -6384,30 +6440,93 @@ function ucValidasi(btn) {
 }
 
 // ── Tab Riwayat
+const UC_ST_CLS = { Terkirim: 'chip-in', Antri: 'chip-warn', Proses: 'chip-trf', Gagal: 'chip-out', Batal: 'chip-mute' };
+const UC_ST_LBL = { Antri: 'Antre', Proses: 'Mengirim…' };
+const ucQ = (id) => ((S.ui.uc.info && S.ui.uc.info.antrian) || []).find((q) => q.id === id);
+/** Keterangan kartu dari jawaban gateway. */
+const ucKartuInfo = (q) => (!q.lampiran ? '' : /tanpa kartu/i.test(q.respon || '') ? '<span class="chip chip-warn" title="Gateway menolak gambar"><i class="bi bi-image"></i>Tanpa kartu</span>'
+  : q.status === 'Terkirim' ? '<span class="chip chip-in"><i class="bi bi-image"></i>+ Kartu</span>' : '<i class="bi bi-image t-primary" title="Dengan kartu"></i>');
 function ucRiwayatHtml() {
   const u = S.ui.uc, info = u.info, sup = isSuper();
   if (!info) return `<div class="card card-pad">${'<div class="sk" style="height:46px;margin-bottom:10px"></div>'.repeat(4)}</div>`;
   if (info.error) return `<div class="callout danger"><i class="bi bi-exclamation-octagon t-out"></i><span>${esc(info.error)}</span></div>`;
-  const list = (info.antrian || []).filter((q) => !u.rStatus || q.status === u.rStatus);
-  const cnt = (s) => (info.antrian || []).filter((q) => q.status === s).length;
-  const cls = { Terkirim: 'chip-in', Antri: 'chip-warn', Gagal: 'chip-out', Batal: 'chip-mute' };
-  const sel = Object.keys(u.rSel).filter((k) => u.rSel[k]);
+  const all = info.antrian || [], list = all.filter((q) => !u.rStatus || q.status === u.rStatus || (u.rStatus === 'Antri' && q.status === 'Proses'));
+  const cnt = (s) => all.filter((q) => q.status === s || (s === 'Antri' && q.status === 'Proses')).length;
+  const allSel = sup && list.length > 0 && list.every((q) => u.rSel[q.id]);
   return `<div class="card"><div class="filterbar">
-    <div class="seg">${[['', 'Semua', (info.antrian || []).length], ['Antri', 'Antre', cnt('Antri')], ['Terkirim', 'Terkirim', cnt('Terkirim')], ['Gagal', 'Gagal', cnt('Gagal')], ['Batal', 'Batal', cnt('Batal')]].map(([k, l, n]) => `<button class="${u.rStatus === k ? 'on' : ''}" onclick="S.ui.uc.rStatus='${k}';S.ui.uc.rSel={};renderUcapan()">${l} <span class="count">${n}</span></button>`).join('')}</div>
+    <div class="seg">${[['', 'Semua', all.length], ['Antri', 'Antre', cnt('Antri')], ['Terkirim', 'Terkirim', cnt('Terkirim')], ['Gagal', 'Gagal', cnt('Gagal')], ['Batal', 'Batal', cnt('Batal')]].map(([k, l, n]) => `<button class="${u.rStatus === k ? 'on' : ''}" onclick="S.ui.uc.rStatus='${k}';S.ui.uc.rSel={};renderUcapan()">${l} <span class="muted">${n}</span></button>`).join('')}</div>
     <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ucLoadInfo(true)"><i class="bi bi-arrow-clockwise"></i>Muat ulang</button></div>
-    ${sup && sel.length ? `<div class="gat-tools"><span class="small"><b>${sel.length}</b> dipilih</span><button class="btn btn-soft btn-sm" onclick="ucAntrian('ulang')"><i class="bi bi-arrow-repeat"></i>Kirim Ulang</button><button class="btn btn-ghost btn-sm t-out" onclick="ucAntrian('batal')"><i class="bi bi-x-circle"></i>Batalkan</button></div>` : ''}
-    ${list.length ? `<div class="table-wrap"><table class="tbl cards"><thead><tr>${sup ? '<th></th>' : ''}<th>Waktu</th><th>Penerima</th><th>Ucapan</th><th>Status</th><th>Keterangan gateway</th></tr></thead><tbody>
-      ${list.map((q) => `<tr>${sup ? `<td><input type="checkbox" ${u.rSel[q.id] ? 'checked' : ''} ${q.status === 'Terkirim' ? 'disabled' : ''} onchange="S.ui.uc.rSel['${q.id}']=this.checked;renderUcapan()" aria-label="Pilih"></td>` : ''}
+    ${sup && list.length ? `<div class="gat-tools"><label class="check gat-all"><input type="checkbox" id="uc-r-all" ${allSel ? 'checked' : ''} onchange="ucRSelAll(this.checked)"> <span>Pilih semua <span class="muted">(${list.length} tampil)</span></span></label><span class="small muted">Klik baris untuk melihat isi pesan & kartu.</span></div>
+    <div id="uc-r-bulk"></div>` : list.length ? '<p class="small muted" style="padding:0 16px 10px">Klik baris untuk melihat isi pesan & kartu.</p>' : ''}
+    ${list.length ? `<div class="table-wrap"><table class="tbl cards uc-rtbl"><thead><tr>${sup ? '<th style="width:40px"></th>' : ''}<th>Waktu</th><th>Penerima</th><th>Ucapan</th><th>Status</th><th>Keterangan gateway</th></tr></thead><tbody>
+      ${list.map((q) => `<tr class="uc-rw${u.rSel[q.id] ? ' sel' : ''}" data-qid="${q.id}" onclick="ucRiwayatDetail('${q.id}')" tabindex="0" onkeydown="if(event.key==='Enter')ucRiwayatDetail('${q.id}')">${sup ? `<td onclick="event.stopPropagation()"><label class="gat-chk"><input type="checkbox" ${u.rSel[q.id] ? 'checked' : ''} onchange="ucRToggle('${q.id}', this.checked)" aria-label="Pilih ucapan untuk ${esc(q.nama)}"></label></td>` : ''}
         <td class="small mono" data-m="full">${esc(String(q.dikirim_pada || q.dibuat_pada).replace('T', ' ').slice(0, 16))}</td>
         <td><b>${esc(q.nama)}</b><div class="t-sub mono">${esc(String(q.tujuan || '').replace(/^62/, '0'))}</div></td>
-        <td class="small">${esc(q.subjek)}${q.lampiran ? ' <i class="bi bi-image t-primary" title="Dengan kartu"></i>' : ''}</td>
-        <td><span class="chip ${cls[q.status] || 'chip-soft'}">${esc(q.status)}</span>${q.percobaan > 1 ? `<div class="t-sub">${q.percobaan}× coba</div>` : ''}</td>
-        <td class="small muted" data-m="hide">${esc(q.respon || '-')}</td></tr>`).join('')}
+        <td class="small">${esc(q.subjek)} ${ucKartuInfo(q)}</td>
+        <td><span class="chip ${UC_ST_CLS[q.status] || 'chip-soft'}">${esc(UC_ST_LBL[q.status] || q.status)}</span>${q.percobaan > 1 ? `<div class="t-sub">${q.percobaan}× coba</div>` : ''}</td>
+        <td class="small muted" data-m="hide"><span class="uc-resp">${esc(q.respon || '-')}</span></td></tr>`).join('')}
     </tbody></table></div>` : emptyState('bi-inbox', 'Belum ada riwayat pengiriman', 'Ucapan yang sudah dijadwalkan atau terkirim akan muncul di sini.')}</div>`;
 }
-function ucAntrian(aksi) {
-  const ids = Object.keys(S.ui.uc.rSel).filter((k) => S.ui.uc.rSel[k]);
-  api('aturAntrianUcapan', S.token, aksi, ids).then((r) => { toast(r.message, 'success'); S.ui.uc.rSel = {}; ucLoadInfo(true); }).catch((e) => toast(e.message, 'error'));
+function ucRToggle(id, on) {
+  if (on) S.ui.uc.rSel[id] = true; else delete S.ui.uc.rSel[id];
+  const tr = document.querySelector(`.uc-rw[data-qid="${id}"]`);
+  if (tr) { tr.classList.toggle('sel', !!on); const c = tr.querySelector('input[type=checkbox]'); if (c) c.checked = !!on; }
+  ucRBulk();
+}
+function ucRSelAll(on) {
+  const u = S.ui.uc, all = (u.info && u.info.antrian) || [];
+  all.filter((q) => !u.rStatus || q.status === u.rStatus || (u.rStatus === 'Antri' && q.status === 'Proses')).forEach((q) => { if (on) u.rSel[q.id] = true; else delete u.rSel[q.id]; });
+  $$('.uc-rw').forEach((tr) => { tr.classList.toggle('sel', !!on); const c = tr.querySelector('input[type=checkbox]'); if (c) c.checked = !!on; });
+  ucRBulk();
+}
+const ucRSelected = () => Object.keys(S.ui.uc.rSel).filter((k) => S.ui.uc.rSel[k]).map(ucQ).filter(Boolean);
+function ucRBulk() {
+  const el = $('#uc-r-bulk'); if (!el) return;
+  const sel = ucRSelected(), all = $('#uc-r-all');
+  if (all) { const vis = $$('.uc-rw').length; all.checked = vis > 0 && sel.length >= vis; all.indeterminate = sel.length > 0 && !all.checked; }
+  if (!sel.length) { el.innerHTML = ''; el.className = ''; return; }
+  const nUlang = sel.filter((q) => q.status !== 'Antri' && q.status !== 'Proses').length, nBatal = sel.filter((q) => q.status === 'Antri').length;
+  el.className = 'gat-bulk';
+  el.innerHTML = `<div class="gat-bulk-info"><b>${sel.length} riwayat dipilih</b></div>
+    <div class="gat-bulk-act">${nUlang ? `<button class="btn btn-sm b-trf" onclick="ucAntrian('ulang')"><i class="bi bi-arrow-repeat"></i>Kirim Ulang (${nUlang})</button>` : ''}
+      ${nBatal ? `<button class="btn btn-sm b-warn" onclick="ucAntrian('batal')"><i class="bi bi-x-circle"></i>Batalkan (${nBatal})</button>` : ''}
+      <button class="btn btn-sm b-out" onclick="ucAntrian('hapus')"><i class="bi bi-trash3"></i>Hapus (${sel.length})</button>
+      <button class="btn btn-sm b-x" onclick="ucRSelAll(false)" title="Batalkan pilihan" aria-label="Batalkan pilihan"><i class="bi bi-x-lg"></i></button></div>`;
+}
+/** Detail satu riwayat: isi pesan, kartu, status, jawaban gateway + aksi Super Admin. */
+function ucRiwayatDetail(id) {
+  const q = ucQ(id); if (!q) return;
+  const sup = isSuper(), img = q.id_kartu ? 'https://lh3.googleusercontent.com/d/' + q.id_kartu : '';
+  const waktu = (v) => (v ? esc(String(v).replace('T', ' ').slice(0, 16)) : '-');
+  openModal({ title: 'Riwayat Ucapan · ' + (q.nama || ''), size: 'wide', body: `<div class="uc-rdet">
+    <div class="stack" style="gap:12px;min-width:0">
+      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip ${UC_ST_CLS[q.status] || 'chip-soft'}">${esc(UC_ST_LBL[q.status] || q.status)}</span>${ucKartuInfo(q)}${q.percobaan ? `<span class="chip chip-soft">${q.percobaan}× dicoba</span>` : ''}</div>
+      <div class="grid g-2 g-tight small">
+        <div><span class="muted">Penerima</span><div><b>${esc(q.nama)}</b></div><div class="mono">${esc(String(q.tujuan || '').replace(/^62/, '0'))}</div></div>
+        <div><span class="muted">Ucapan</span><div><b>${esc(q.subjek)}</b></div></div>
+        <div><span class="muted">Dijadwalkan</span><div class="mono">${waktu(q.dibuat_pada)}</div></div>
+        <div><span class="muted">Terkirim</span><div class="mono">${waktu(q.dikirim_pada)}</div></div></div>
+      <div><span class="small muted">Keterangan gateway</span><div class="uc-rresp">${esc(q.respon || '-')}</div></div>
+      ${q.pesan ? `<div><span class="small muted">Isi pesan</span><div class="wa-bubble">${waFmt(q.pesan)}</div></div>` : '<p class="small muted">Isi pesan hanya terlihat oleh Super Admin.</p>'}
+    </div>
+    <div class="uc-rdet-card">${img ? `<img src="${esc(img)}" alt="Kartu ucapan" loading="lazy" onerror="this.parentNode.classList.add('err')"><div class="empty uc-rimg-err"><i class="bi bi-image"></i>Pratinjau kartu belum tersedia</div><a class="small" href="https://drive.google.com/file/d/${esc(q.id_kartu)}/view" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Buka kartu di Google Drive</a>` : '<div class="empty"><i class="bi bi-image"></i>Tanpa kartu</div>'}</div>
+  </div>`,
+    foot: `${sup ? `<button class="btn btn-ghost t-out" onclick="ucAntrian('hapus', ['${q.id}'])"><i class="bi bi-trash3"></i>Hapus</button>
+      ${q.status === 'Antri' ? `<button class="btn btn-secondary" onclick="ucAntrian('batal', ['${q.id}'])"><i class="bi bi-x-circle"></i>Batalkan</button>` : ''}
+      ${q.status !== 'Antri' && q.status !== 'Proses' ? `<button class="btn btn-secondary" onclick="ucAntrian('ulang', ['${q.id}'])"><i class="bi bi-arrow-repeat"></i>Kirim Ulang</button>` : ''}` : ''}
+      <button class="btn btn-primary" onclick="closeModal()">Tutup</button>` });
+}
+function ucAntrian(aksi, idsArg) {
+  const ids = idsArg || ucRSelected().map((q) => q.id);
+  if (!ids.length) return;
+  const n = ids.length, sudah = ids.map(ucQ).filter((q) => q && q.status === 'Terkirim').length;
+  const tanya = aksi === 'hapus' ? ['Hapus ' + n + ' riwayat ucapan? Riwayat yang dihapus tidak bisa dikembalikan. (Ucapan yang sedang dikirim tidak ikut terhapus.)', { ok: 'Hapus ' + n + ' Riwayat', danger: true, title: 'Hapus Riwayat' }]
+    : aksi === 'ulang' ? ['Kirim ulang ' + n + ' ucapan?' + (sudah ? ' ' + sudah + ' di antaranya sudah pernah terkirim dan akan dikirim lagi.' : ''), { ok: 'Kirim Ulang', title: 'Kirim Ulang Ucapan' }]
+    : ['Batalkan ' + n + ' ucapan yang masih antre?', { ok: 'Batalkan', danger: true, title: 'Batalkan Ucapan' }];
+  confirmDlg(tanya[0], tanya[1]).then((yes) => {
+    if (!yes) return;
+    api('aturAntrianUcapan', S.token, aksi, ids).then((r) => { toast(r.message, 'success'); S.ui.uc.rSel = {}; closeModal(); ucLoadInfo(true); }).catch((e) => toast(e.message, 'error'));
+  });
 }
 
 // ── Aksi

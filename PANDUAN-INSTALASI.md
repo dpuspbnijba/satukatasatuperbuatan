@@ -1,4 +1,4 @@
-# PANDUAN INSTALASI — DPU SP JBA v2.2.0
+# PANDUAN INSTALASI — DPU SP JBA v2.3.0
 ### Server di Google Apps Script (API) + Tampilan di GitHub Pages · untuk Windows
 
 Ada **dua bagian** yang dipasang di dua tempat berbeda:
@@ -8,51 +8,60 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | **Server (API)** | `Kode.gs` (berkas terpisah, **tidak** ada di ZIP) | script.google.com |
 | **Tampilan** | isi ZIP `dpuspjba-web.zip` | GitHub Pages |
 
-**Sudah memakai v2.1.0?** Langsung ke bagian **0**. Masih v2.0.0? Kerjakan bagian **0** lalu **0B**. Pemasangan baru: bagian **A → B → C**, lalu **0B**.
+**Sudah memakai v2.1.0 atau v2.2.0?** Langsung ke bagian **0**. Masih v2.0.0? Kerjakan bagian **0** lalu **0B**. Pemasangan baru: bagian **A → B → C**, lalu **0B**.
 
 ---
 
-## 0. Memperbarui ke v2.2.0 (± 5 menit)
+## 0. Memperbarui ke v2.3.0 (± 5 menit)
 
-### Yang baru di v2.2.0
-1. **Halaman Ucapan → Template & Kartu dirapikan.**
-   - Semua kartu kini sama ukurannya, dan tombol aktif/nonaktif tidak lagi keluar dari kotaknya.
-   - **Semua kartu diunggah otomatis** ke Google Drive saat Super Admin membuka halaman ini (ada progresnya). Kartu yang siap bertanda **"Kartu siap dikirim"**, dan ucapan WhatsApp langsung melampirkan kartunya.
-   - Teks kartu baru: di bawah logo tertulis sub judul **"DPU SP JBA"**, lalu **"Mengucapkan"**. Di bagian bawah tertulis **"Keluarga Besar"** + **"DPU SP JBA"**.
-   - Kedua teks itu bisa diubah Super Admin di kotak **"Teks pada semua kartu"**. Setelah disimpan, semua kartu otomatis dibuat ulang dan diunggah ulang.
-2. **Spin Wheel: pengumuman pemenang seirama musik.**
-   - Setelah roda berhenti, musik tegang (denyut bass, genderang menggulung, dengung yang makin tinggi) mengiringi pengumuman.
-   - Bila pemenang lebih dari satu, nama **muncul satu per satu**. Setiap nama keluar tepat pada hentakan musik, dengan nada yang naik dari nama ke nama, dan ditutup fanfare di nama terakhir.
-   - Sebelum muncul, kotak nama bergetar dan nama-nama peserta berganti cepat mengikuti irama genderang.
-   - Tombol **Tampilkan Semua** membuka semua nama sekaligus. Daftar pemenang di samping baru terisi setelah semua nama diumumkan.
-   - Semua nada dibuat langsung oleh aplikasi; tidak perlu berkas musik atau internet tambahan.
-3. **Tema tampilan.** Super Admin bisa memilih satu dari 12 tema di **Pengaturan → Identitas → Tema Tampilan**:
-   Ungu Klasik, Biru Samudra, Hijau Zamrud, Merah Juang, Senja Jingga, Hitam Emas, Pastel Lavender, Teal Modern, Malam Neon, Monokrom, Batik Nusantara, dan Aurora.
-   - Tema mengubah menu samping, latar, dan warna aplikasi untuk **semua pengguna**, di mode terang maupun gelap.
+### Yang baru di v2.3.0
+1. **Kartu ucapan ikut terkirim bersama kata-kata.**
+   - Sebelumnya, pesan dikirim berombongan lewat Fonnte sehingga gambar kartu tidak ikut, hanya teks.
+   - Sekarang setiap ucapan berkartu dikirim **satu per satu dengan file kartunya**: gambar diunggah langsung, dan kata-kata menjadi keterangan gambar. Jeda acak antarpesan tetap dipakai agar nomor aman.
+   - Bila gateway menolak gambar, aplikasi mencoba lewat tautan gambar. Bila tetap ditolak, ucapan dikirim sebagai teks dan Riwayat Kirim mencatat **"Tanpa kartu"** beserta alasannya.
+2. **Riwayat Kirim bisa diklik, dipilih, dan dihapus.**
+   - Klik baris untuk melihat isi pesan, kartu, waktu, dan keterangan gateway.
+   - Super Admin bisa mencentang satu, beberapa, atau **Pilih semua**, lalu **Hapus**, **Kirim Ulang** (termasuk ucapan yang sudah terkirim), atau **Batalkan** (yang masih antre).
+3. **Nama unit & sub judul untuk semua ucapan.**
+   - Di **Ucapan → Template & Kartu → "Identitas pada kartu & kata-kata ucapan"**, isi **Nama unit** (mis. DPU SP JBA) dan **Sub judul** (opsional).
+   - Kartu dan kata-kata di **semua template** langsung ikut berubah. Tulisan nama lama yang diketik manual di template juga ikut diganti.
+4. **Anggota: pilih & hapus.**
+   - Centang anggota (atau **Pilih semua** sesuai filter/pencarian), lalu klik **Hapus**.
+   - Setiap baris juga punya tombol hapus 🗑.
 
 ### Langkah 1 — Server (Apps Script)
 1. Buka proyek Apps Script yang URL-nya ada di `js/config.js`. Cek di **Terapkan → Kelola deployment**.
-2. Buka **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.2.0** → **Ctrl+S**.
-3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.2.0` → **Terapkan**. URL `/exec` tetap sama.
+2. Buka **Kode.gs** → **Ctrl+A** → **Delete** → tempel **seluruh isi `Kode.gs` v2.3.0** → **Ctrl+S**.
+3. **Terapkan → Kelola deployment → ✏️ Edit → Versi: Versi baru** → Deskripsi `DPU SP JBA API v2.3.0` → **Terapkan**. URL `/exec` tetap sama.
 
 ### Langkah 2 — Tampilan (GitHub Pages)
 1. Ekstrak `dpuspjba-web.zip`. **Salin semua isinya** ke folder tampilan Anda (folder yang berisi `index.html`), lalu pilih **Ganti file di tujuan**.
 2. Buka PowerShell di folder itu dan jalankan satu per satu:
    ```powershell
    git add .
-   git commit -m "DPU SP JBA v2.2.0"
+   git commit -m "DPU SP JBA v2.3.0"
    git push
    ```
 3. Tunggu 1–2 menit → buka situs → **Ctrl+Shift+R**.
 
 ### Langkah 3 — Setelah pembaruan (Super Admin)
-1. Buka **Ucapan & Hari Besar → Template & Kartu**. Biarkan halaman terbuka ± 1 menit sampai muncul **"Semua 15 kartu siap dikirim"**.
-2. (Opsional) Ubah teks kartu di kotak **"Teks pada semua kartu"** → **Simpan & Perbarui Kartu**.
-3. (Opsional) Pilih tema di **Pengaturan → Identitas → Tema Tampilan** → **Simpan Perubahan Identitas**.
+1. Buka **Ucapan & Hari Besar → Template & Kartu**. Pastikan muncul **"Semua 15 kartu siap dikirim"**.
+2. Isi **Nama unit** dan **Sub judul** di kotak **"Identitas pada kartu & kata-kata ucapan"** → **Simpan & Perbarui Semua Template**.
+3. Coba **Kirim Tes** di salah satu kartu ke nomor Anda sendiri. Gambar kartu harus masuk bersama kata-katanya.
+4. Ucapan yang tadi terkirim tanpa kartu: buka **Riwayat Kirim**, centang, lalu klik **Kirim Ulang**.
 
-> 💡 Kartu harus memakai **logo yang diunggah sebagai file** (Pengaturan → Identitas → Unggah Logo). Logo berupa tautan dari situs lain tidak bisa digambar ke kartu.
+> 💡 **Kirim gambar lewat Fonnte butuh paket Super, Advanced, atau Ultra** (lihat dokumentasi Fonnte). Bila paket Anda belum mendukung, ucapan tetap terkirim sebagai teks dan Riwayat mencatat "Tanpa kartu".
 >
-> 💡 Agar kartu ikut terkirim, **Lampirkan kartu ucapan** di Ucapan → Pengaturan harus dicentang, dan paket Fonnte harus mendukung lampiran gambar. Bila belum mendukung, ucapan tetap terkirim sebagai teks.
+> 💡 Kartu harus memakai **logo yang diunggah sebagai file** (Pengaturan → Identitas → Unggah Logo). **Lampirkan kartu ucapan** di Ucapan → Pengaturan juga harus dicentang.
+>
+> ⏱️ Karena dikirim satu per satu dengan jeda acak, ucapan berkartu terkirim ± 6–10 pesan per menit. Sisanya otomatis menyusul pada menit berikutnya.
+
+### Fitur v2.2.0 (sudah termasuk)
+- **Kartu ucapan:**
+  - Template rapi dan semua kartu diunggah otomatis ke Google Drive.
+  - Di bawah logo tertulis nama unit + "Mengucapkan"; di bagian bawah "Keluarga Besar" + nama unit.
+- **Spin Wheel:** pemenang diumumkan satu per satu, seirama musik.
+- **Tema tampilan:** 12 pilihan di **Pengaturan → Identitas → Tema Tampilan** (Ungu Klasik, Biru Samudra, Hijau Zamrud, Merah Juang, Senja Jingga, Hitam Emas, Pastel Lavender, Teal Modern, Malam Neon, Monokrom, Batik Nusantara, Aurora).
 
 ---
 
@@ -83,12 +92,12 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    - Buka **Log eksekusi** di bawah. Pastikan ada `✅ Setup selesai.`
    - **Catat akun awal** yang tampil (contoh `superadmin / Ab3dEf9h (Super Admin)`). Akun ini hanya ditampilkan **sekali**.
 5. Klik **Terapkan** (kanan atas) → **Deployment baru** → ikon ⚙️ di "Pilih jenis" → **Aplikasi web**:
-   - Deskripsi: `DPU SP JBA API v2.2.0`
+   - Deskripsi: `DPU SP JBA API v2.3.0`
    - **Jalankan sebagai: Saya**
    - **Yang memiliki akses: Siapa saja** ← wajib. Bila dipilih "Siapa saja yang memiliki Akun Google", tampilan tidak bisa terhubung.
    - Klik **Terapkan** → salin **URL Aplikasi web** (berakhiran `/exec`). Simpan di Notepad.
 6. Uji server: buka **jendela Incognito** (Chrome: **Ctrl+Shift+N**). Tempel URL tadi, tambahkan `?action=info` di belakangnya, lalu buka.
-   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.2.0",...,"siap":true}}`.
+   Hasil yang benar berupa teks seperti `{"success":true,"data":{"app":"DPU SP JBA API","version":"2.3.0",...,"siap":true}}`.
    > Jangan uji di jendela biasa bila browser login dengan **lebih dari satu akun Google**. Google akan menampilkan
    > "Maaf, saat ini tidak dapat membuka file" walaupun server sebenarnya sudah benar.
 
@@ -128,7 +137,7 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
    ```powershell
    git init
    git add .
-   git commit -m "DPU SP JBA v2.2.0"
+   git commit -m "DPU SP JBA v2.3.0"
    git branch -M main
    git remote add origin https://github.com/USERNAME/REPO.git
    git push -u origin main
@@ -178,10 +187,10 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 | Kotak **"Alamat server belum diatur"** | `js/config.js` belum diisi | Isi `GAS_URL` (langkah B2), lalu `git add .` → `git commit -m "isi URL"` → `git push` |
 | Halaman Google Drive **"Maaf, saat ini tidak dapat membuka file"** saat membuka URL /exec | Browser login dengan beberapa akun Google, URL salah salin, atau akses bukan "Siapa saja" | Buka di **Incognito** (Ctrl+Shift+N). Salin ulang lewat Kelola deployment → **Salin**. Pastikan akses **Siapa saja** |
 | **"Tidak bisa terhubung ke server Apps Script"** | Akses deployment bukan "Siapa saja", URL salah, atau internet putus | Periksa langkah A5. URL harus berakhiran `/exec` |
-| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.2.0, lalu Kelola deployment → Edit → **Versi baru** |
+| **"Fungsi server … belum tersedia"** atau toast **"Versi server belum diperbarui"** | `Kode.gs` di server masih versi lama | Simpan `Kode.gs` v2.3.0, lalu Kelola deployment → Edit → **Versi baru** |
 | Menu **Ucapan & Hari Besar** tidak muncul | Peran Anda tidak punya akses | Super Admin mengatur akses di Pengaturan → Pengguna & Hak Akses |
 | Tombol **Kirim otomatis** tidak bisa dicentang | WhatsApp belum mode Gateway | Pengaturan → Notifikasi → mode **Gateway** + token Fonnte |
-| Riwayat **"Terkirim tanpa kartu"** | Paket Fonnte belum mendukung lampiran gambar | Normal: ucapan teks tetap terkirim. Tingkatkan paket Fonnte bila ingin kartu ikut terkirim |
+| Riwayat **"Tanpa kartu"** | Gateway menolak gambar (paket Fonnte belum Super/Advanced/Ultra) | Ucapan teks tetap terkirim. Tingkatkan paket Fonnte, lalu centang riwayatnya → **Kirim Ulang** |
 | Riwayat **"Gagal"** | Nomor salah, tidak terdaftar di WA, atau gateway sedang putus | Periksa nomor anggota → pilih baris di Riwayat Kirim → **Kirim Ulang** |
 | GitHub Pages **404** | `index.html` tidak berada di akar repository | Di GitHub, `index.html` harus terlihat langsung. Bila terlihat di dalam sebuah folder, push ulang dari folder yang benar |
 | Masih tampil versi lama | Cache browser | **Ctrl+Shift+R** atau buka di jendela Incognito |
@@ -194,4 +203,4 @@ Ada **dua bagian** yang dipasang di dua tempat berbeda:
 - Repository GitHub **Public** hanya berisi tampilan. Tidak ada sandi, token, ID spreadsheet, atau data di dalamnya.
 - `Kode.gs` **tidak pernah** di-upload ke GitHub. Token Fonnte disimpan di *Script Properties* dan tidak pernah dikirim ke tampilan.
 - Semua data hanya bisa dibuka setelah login dengan token sesi.
-- Dari internet hanya **42 fungsi aplikasi** yang bisa dipanggil. Fungsi setup, data contoh, pemicu terjadwal (ucapan harian dan antrean WA), serta reset sandi hanya bisa dijalankan pemilik dari editor Apps Script.
+- Dari internet hanya **44 fungsi aplikasi** yang bisa dipanggil. Fungsi setup, data contoh, pemicu terjadwal (ucapan harian dan antrean WA), serta reset sandi hanya bisa dijalankan pemilik dari editor Apps Script.

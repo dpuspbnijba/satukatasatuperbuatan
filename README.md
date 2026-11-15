@@ -1,4 +1,4 @@
-# DPU SP JBA v2.2.0 — Tampilan (GitHub Pages)
+# DPU SP JBA v2.3.0 — Tampilan (GitHub Pages)
 
 Aplikasi keuangan, inventaris, anggota, ucapan WhatsApp, dan kegiatan serikat pekerja **DPU SP JBA**.
 Repository ini **hanya berisi tampilan** (HTML/CSS/JS statis). Data dan logika ada di **Google Apps Script** (`Kode.gs`), yang disimpan **terpisah** di script.google.com, bukan di sini.
@@ -18,7 +18,7 @@ js/app.js         seluruh fitur aplikasi
 
 ## Memperbarui tampilan
 1. Ubah file di folder ini.
-2. Naikkan angka `?v=2.2.0` di `index.html` (mis. `?v=2.2.1`) agar browser tidak memakai versi lama.
+2. Naikkan angka `?v=2.3.0` di `index.html` (mis. `?v=2.3.1`) agar browser tidak memakai versi lama.
 3. Jalankan:
    ```
    git add .
